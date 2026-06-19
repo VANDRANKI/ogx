@@ -8,13 +8,36 @@ import os
 
 
 class MissingCredentialError(Exception):
-    """Raised when a required credential is not found in the environment."""
+    """Raised when a required credential is not found in the environment.
+
+    This exception is raised by :func:`get_env_or_fail` when the requested
+    environment variable is either absent or set to an empty string.  Callers
+    that cannot continue without the credential should let this propagate;
+    callers that want to fall back to a default should catch it explicitly.
+    """
 
     pass
 
 
 def get_env_or_fail(key: str) -> str:
-    """Get environment variable or raise helpful error"""
+    """Return the value of an environment variable or raise a descriptive error.
+
+    Looks up *key* in the current process environment.  If the variable is
+    missing or empty, raises :exc:`MissingCredentialError` with actionable
+    instructions so developers know exactly how to supply the missing value.
+
+    Args:
+        key: The name of the environment variable to look up.
+
+    Returns:
+        The non-empty string value of the environment variable.
+
+    Raises:
+        MissingCredentialError: If *key* is not set or is set to an empty
+            string.  The error message lists three ways to supply the value:
+            exporting in the shell, writing a ``.env`` file, or passing it
+            directly to pytest.
+    """
     value = os.getenv(key)
     if not value:
         raise MissingCredentialError(
