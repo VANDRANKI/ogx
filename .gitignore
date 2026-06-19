@@ -9,7 +9,6 @@ ogx/configs/*
 .cursor/
 xcuserdata/
 *.hmap
-.DS_Store
 .build/
 Package.resolved
 *.pte
@@ -55,3 +54,27 @@ client-sdks/openapi/sdks/
 client-sdks/openapi/.openapi-generator/
 .agentready
 .gstack/
+
+# Common local developer artifacts
+*.pyc
+*.pyo
+.env.*
+!.env.example
+*.bak
+tmp/
+.cache/
+.ruff_cache/
+profile_output/
+*.prof
+
+# JetBrains IDEs
+*.iml
+.idea/
+
+# Vim/Emacs swap files
+*~
+\#*\#
+
+# MacOS metadata
+.AppleDouble
+.LSOverride
