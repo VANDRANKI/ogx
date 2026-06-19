@@ -1,15 +1,16 @@
 .env
-__pycache__
-dist
-*.egg-info
+__pycache__/
+*.pyc
+*.pyo
+dist/
+*.egg-info/
 dev_requirements.txt
-build
+build/
 .DS_Store
 ogx/configs/*
 .cursor/
 xcuserdata/
 *.hmap
-.DS_Store
 .build/
 Package.resolved
 *.pte
@@ -41,6 +42,13 @@ docs/docs/api-experimental/
 docs/docs/api/
 tests/integration/client-typescript/node_modules/
 .ts-client-checkout/
+
+# Compiled extension modules
+*.so
+
+# Integration test recordings (generated; do not commit by default)
+# Commit recordings intentionally when adding new test coverage
+recordings/
 
 # oracle connection files
 **/tnsnames.ora
