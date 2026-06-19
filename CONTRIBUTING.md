@@ -24,6 +24,17 @@ If you don't specify a Python version, `uv` will automatically select a Python v
 section of the `pyproject.toml`, which is fine for running OGX but not for committing changes.
 For more info, see the [uv docs around Python versions](https://docs.astral.sh/uv/concepts/python-versions/).
 
+### Quick setup for new contributors
+
+Run the one-shot setup script after cloning:
+
+```bash
+bash scripts/dev-setup.sh
+source .venv/bin/activate
+```
+
+This script checks your Python version, runs `uv sync`, and installs the pre-commit hooks in one step.
+
 Note that you can create a dotenv file `.env` that includes necessary environment variables:
 
 ```text
@@ -79,6 +90,75 @@ uv run --group dev --group type_checking mypy
 **Caution:** Before pushing your changes, make sure that the pre-commit hooks have passed successfully.
 ```
 
+## Integration Test Recording System
+
+OGX integration tests use a **recording/replay system** so that tests can run
+without live API keys in most situations. Understanding this system prevents
+confusion when adding or modifying integration tests.
+
+### How it works
+
+When an integration test runs in **record** mode it makes real HTTP requests to
+the upstream provider (e.g. OpenAI) and saves each request/response pair as a
+JSON file under `tests/integration/*/recordings/`. The file name is the
+SHA-256 hash of the request body. On subsequent runs in **replay** mode the
+test loads the saved JSON instead of hitting the network, so no API key is
+required.
+
+### Running in replay mode (default)
+
+No API key is needed. This is the mode used in CI and is the default when
+you run the integration test script:
+
+```bash
+uv run --no-sync ./scripts/integration-tests.sh \
+  --stack-config server:ci-tests --setup gpt \
+  --file tests/integration/responses/test_compact_responses.py
+```
+
+### What to do when a recording is missing
+
+If a test fails with "Recording not found", a recording file does not yet
+exist for the request your code produces. This happens when:
+
+- You added a new test that has never been recorded.
+- You changed the request body (e.g. added a parameter), which produces a
+  different SHA-256 hash that does not match any existing recording.
+
+Fix it by re-running with `--inference-mode record-if-missing`:
+
+```bash
+uv run --no-sync ./scripts/integration-tests.sh \
+  --stack-config server:ci-tests --setup gpt \
+  --inference-mode record-if-missing \
+  --file tests/integration/responses/test_compact_responses.py
+```
+
+This requires a valid API key for the provider under test (e.g. `OPENAI_API_KEY`
+for `--setup gpt`). If you do not have a key, ask a maintainer to trigger the
+`.github/workflows/record-integration-tests.yml` workflow on your branch.
+
+After recording, **commit the new recording files** alongside your code change.
+
+### Inference mode flags
+
+| Flag | Behaviour |
+|------|-----------|
+| `replay` (default) | Use existing recordings only. Fail if no recording matches. |
+| `record` | Always make live requests and overwrite existing recordings. |
+| `record-if-missing` | Use existing recordings when available; make a live request only when no recording matches. |
+
+### Choosing a suite
+
+Pass `--suite <name>` to run a predefined group of tests:
+
+```bash
+uv run --no-sync ./scripts/integration-tests.sh \
+  --stack-config server:ci-tests --setup gpt --suite responses
+```
+
+Available suites: `base`, `responses`, `vision`.
+
 ## Issues and Pull Requests
 
 We actively welcome your pull requests. However, please read the following. This is heavily inspired by [Ghostty](https://github.com/ghostty-org/ghostty/blob/main/CONTRIBUTING.md).
@@ -108,9 +188,9 @@ leave a comment on the issue and a triager will assign it to you.
 
 Please avoid picking up too many issues at once. This helps you stay focused and ensures that others in the community also have opportunities to contribute.
 
-- Try to work on only 1–2 issues at a time, especially if you’re still getting familiar with the codebase.
-- Before taking an issue, check if it’s already assigned or being actively discussed.
-- If you’re blocked or can’t continue with an issue, feel free to unassign yourself or leave a comment so others can step in.
+- Try to work on only 1-2 issues at a time, especially if you're still getting familiar with the codebase.
+- Before taking an issue, check if it's already assigned or being actively discussed.
+- If you're blocked or can't continue with an issue, feel free to unassign yourself or leave a comment so others can step in.
 
 ### I have a bug
 
@@ -215,6 +295,21 @@ This process helps ensure that new providers are well-designed, avoid duplicatio
   documentation.
 - When possible, use keyword arguments only when calling functions.
 - OGX utilizes [custom Exception classes](src/ogx_api/common/errors.py) for certain Resources that should be used where applicable.
+
+### Structured Logging
+
+OGX uses structured, key-value style logging via `from ogx.log import get_logger`. A pre-commit
+hook enforces this — f-string log messages will be rejected.
+
+```python
+# Correct
+from ogx.log import get_logger
+logger = get_logger(__name__)
+logger.info("Processing request", model=model_id, provider=provider)
+
+# Incorrect — rejected by the 'Block f-string logging' pre-commit hook
+logger.info(f"Processing request for {model_id}")
+```
 
 ### License
 
