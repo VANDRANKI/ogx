@@ -88,19 +88,33 @@ class ProviderImpl(Providers):
         return ListProvidersResponse(data=ret)
 
     async def inspect_provider(self, request: InspectProviderRequest) -> ProviderInfo:
+        """Return detailed information for a single provider by ID.
+
+        Args:
+            request: Request containing the ``provider_id`` to look up.
+
+        Returns:
+            A :class:`~ogx_api.ProviderInfo` for the matching provider.
+
+        Raises:
+            ValueError: If no provider with the given ID is registered in the
+                current stack configuration.
+        """
         all_providers = await self.list_providers()
         for p in all_providers.data:
             if p.provider_id == request.provider_id:
                 return p
 
-        raise ValueError(f"Provider {request.provider_id} not found")
+        raise ValueError(f"Failed to inspect provider: provider '{request.provider_id}' not found")
 
     async def get_providers_health(self) -> dict[str, dict[str, HealthResponse]]:
         """Get health status for all providers.
 
         Returns:
-            Dict[str, Dict[str, HealthResponse]]: A dictionary mapping API names to provider health statuses.
-                Each API maps to a dictionary of provider IDs to their health responses.
+            A nested dict mapping API name -> provider ID -> health response.
+            Each leaf :class:`~ogx_api.HealthResponse` reflects the outcome of
+            the provider's ``health()`` method, or a ``NOT_IMPLEMENTED`` sentinel
+            when the provider does not expose a health check.
         """
         providers_health: dict[str, dict[str, HealthResponse]] = {}
 
@@ -111,14 +125,17 @@ class ProviderImpl(Providers):
         # otherwise we will miss some providers.
         timeout = 3.0
 
-        async def check_provider_health(impl: Any) -> tuple[str, HealthResponse] | None:
+        async def check_provider_health(impl: Any) -> tuple[str, str, HealthResponse] | None:
             # Skip special implementations (inspect/providers) that don't have provider specs
             if not hasattr(impl, "__provider_spec__"):
                 return None
-            api_name = impl.__provider_spec__.api.name
+            spec = impl.__provider_spec__
+            api_name = spec.api.name
+            provider_id: str = getattr(spec, "provider_id", "") or ""
             if not hasattr(impl, "health"):
                 return (
                     api_name,
+                    provider_id,
                     HealthResponse(
                         status=HealthStatus.NOT_IMPLEMENTED, message="Provider does not implement health check"
                     ),
@@ -126,10 +143,11 @@ class ProviderImpl(Providers):
 
             try:
                 health = await asyncio.wait_for(impl.health(), timeout=timeout)
-                return api_name, health
+                return api_name, provider_id, health
             except TimeoutError:
                 return (
                     api_name,
+                    provider_id,
                     HealthResponse(
                         status=HealthStatus.ERROR, message=f"Health check timed out after {timeout} seconds"
                     ),
@@ -137,6 +155,7 @@ class ProviderImpl(Providers):
             except Exception as e:
                 return (
                     api_name,
+                    provider_id,
                     HealthResponse(status=HealthStatus.ERROR, message=f"Health check failed: {str(e)}"),
                 )
 
@@ -150,7 +169,9 @@ class ProviderImpl(Providers):
         for result in results:
             if result is None:  # Skip special implementations
                 continue
-            api_name, health_response = result
-            providers_health[api_name] = health_response
+            api_name, provider_id, health_response = result
+            if api_name not in providers_health:
+                providers_health[api_name] = {}
+            providers_health[api_name][provider_id] = health_response
 
         return providers_health
