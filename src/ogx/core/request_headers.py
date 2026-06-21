@@ -26,7 +26,14 @@ PROVIDER_DATA_VAR: contextvars.ContextVar[dict[str, Any] | None] = contextvars.C
 
 
 class RequestProviderDataContext(AbstractContextManager[None]):
-    """Context manager for request provider data"""
+    """Context manager that stores per-request provider data in a ContextVar.
+
+    On entry the given *provider_data* dict (and optional *user*) are pushed
+    into :data:`PROVIDER_DATA_VAR` so that downstream code can retrieve them
+    with :func:`get_authenticated_user` or via the :class:`NeedsRequestProviderData`
+    mixin.  On exit the previous value is restored atomically via the
+    ContextVar token mechanism.
+    """
 
     def __init__(self, provider_data: dict[str, Any] | None = None, user: User | None = None) -> None:
         if provider_data is not None and not isinstance(provider_data, dict):
@@ -54,6 +61,17 @@ class NeedsRequestProviderData:
     __provider_spec__: "ProviderSpec"
 
     def get_request_provider_data(self) -> Any:
+        """Retrieve and validate per-request provider data for this provider.
+
+        Returns:
+            A validated provider-data object (type determined by the spec's
+            ``provider_data_validator``), or ``None`` if no provider data is
+            present in the current request context.
+
+        Raises:
+            ValueError: If ``__provider_spec__`` is not set on the instance, or
+                if the spec does not declare a ``provider_data_validator``.
+        """
         spec = self.__provider_spec__  # type: ignore[attr-defined]
         if not spec:
             raise ValueError(f"Provider spec not set on {self.__class__}")
@@ -72,12 +90,25 @@ class NeedsRequestProviderData:
             provider_data = validator(**val)
             return provider_data
         except Exception as e:
-            log.error(f"Error parsing provider data: {e}")
+            log.error("Error parsing provider data", error=str(e))
             return None
 
 
 def parse_request_provider_data(headers: dict[str, str]) -> dict[str, Any] | None:
-    """Parse provider data from request headers"""
+    """Parse provider data from the ``X-OGX-Provider-Data`` request header.
+
+    The header value must be a JSON-encoded object.  Both the canonical
+    mixed-case form and the all-lowercase form of the header name are
+    accepted because HTTP/2 normalises headers to lowercase.
+
+    Args:
+        headers: A mapping of header names to values, as provided by the
+            ASGI framework.
+
+    Returns:
+        The parsed provider data dict, or ``None`` if the header is absent,
+        empty, or not a valid JSON object.
+    """
     keys = [
         "X-OGX-Provider-Data",
         "x-ogx-provider-data",
@@ -108,13 +139,33 @@ def parse_request_provider_data(headers: dict[str, str]) -> dict[str, Any] | Non
 
 
 def request_provider_data_context(headers: dict[str, str], user: User | None = None) -> AbstractContextManager[None]:
-    """Context manager that sets request provider data from headers and user for the duration of the context"""
+    """Build a context manager that injects provider data from request headers.
+
+    Parses ``X-OGX-Provider-Data`` from *headers* and, together with the
+    optional *user*, pushes the data into :data:`PROVIDER_DATA_VAR` for the
+    duration of the context.
+
+    Args:
+        headers: Raw request headers mapping (case-sensitive; both
+            ``X-OGX-Provider-Data`` and ``x-ogx-provider-data`` are checked).
+        user: Authenticated user to embed in the provider data, if any.
+
+    Returns:
+        A :class:`RequestProviderDataContext` context manager ready to be used
+        in an ``async with`` or ``with`` block.
+    """
     provider_data = parse_request_provider_data(headers)
     return RequestProviderDataContext(provider_data, user)
 
 
 def get_authenticated_user() -> User | None:
-    """Helper to retrieve auth attributes from the provider data context"""
+    """Retrieve the authenticated user from the current request context.
+
+    Returns:
+        The :class:`~ogx.core.datatypes.User` stored by the most recent
+        :class:`RequestProviderDataContext`, or ``None`` if no context is
+        active or no user was set.
+    """
     provider_data = PROVIDER_DATA_VAR.get()
     if not provider_data:
         return None
@@ -122,7 +173,20 @@ def get_authenticated_user() -> User | None:
 
 
 def user_from_scope(scope: Scope) -> User | None:
-    """Create a User object from ASGI scope data (set by authentication middleware)"""
+    """Create a :class:`~ogx.core.datatypes.User` from ASGI scope data.
+
+    Authentication middleware is expected to populate ``scope["principal"]``
+    and ``scope["user_attributes"]`` before the route handler runs.  This
+    helper reads those keys and constructs the corresponding User object.
+
+    Args:
+        scope: The ASGI connection scope dict.
+
+    Returns:
+        A :class:`~ogx.core.datatypes.User` if authentication data is present,
+        or ``None`` when auth is disabled (both ``principal`` and
+        ``user_attributes`` are absent / empty).
+    """
     user_attributes = scope.get("user_attributes", {})
     principal = scope.get("principal", "")
 
