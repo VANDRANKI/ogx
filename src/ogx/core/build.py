@@ -4,6 +4,15 @@
 # This source code is licensed under the terms described in the LICENSE file in
 # the root directory of this source tree.
 
+"""Helpers for resolving provider pip dependencies from a StackConfig.
+
+This module is used by the OGX CLI's ``build`` and ``install`` commands to
+determine which Python packages must be installed before a distribution can be
+started.  The main entry-point is :func:`get_provider_dependencies`, which
+walks the provider registry for a given :class:`~ogx.core.datatypes.StackConfig`
+and collects the ``pip_packages`` declared by each provider spec.
+"""
+
 import sys
 
 from pydantic import BaseModel
@@ -40,7 +49,36 @@ class ApiInput(BaseModel):
 def get_provider_dependencies(
     config: StackConfig,
 ) -> tuple[list[str], list[str], list[str]]:
-    """Get normal and special dependencies from provider configuration."""
+    """Collect pip package dependencies required by the providers in a stack config.
+
+    Walks every provider declared in *config* and aggregates the
+    ``pip_packages`` field from each provider spec.  Packages that contain
+    pip flags (``--no-deps``, ``--index-url``, ``--extra-index-url``) are
+    separated into *special_deps* so callers can install them with individual
+    ``pip install`` invocations rather than bundling them into a single
+    command.
+
+    Args:
+        config: The :class:`~ogx.core.datatypes.StackConfig` (or a
+            :class:`~ogx.distributions.template.DistributionTemplate` that
+            will be built into one) describing the providers to inspect.
+
+    Returns:
+        A three-element tuple ``(normal_deps, special_deps, external_provider_deps)``
+        where:
+
+        - *normal_deps* — deduplicated list of plain package specifiers suitable
+          for a single ``uv pip install`` invocation.
+        - *special_deps* — deduplicated list of package specifiers that include
+          pip flags and must be installed one at a time.
+        - *external_provider_deps* — deduplicated list of top-level module paths
+          for external (out-of-tree) provider packages.
+
+    Raises:
+        ValueError: If a provider listed in *config* is not registered for its
+            API, or if any provider spec declares a ``container_image``
+            (container-based providers cannot be resolved to pip packages).
+    """
     if isinstance(config, DistributionTemplate):
         config = config.build_config()
 
@@ -60,7 +98,9 @@ def get_provider_dependencies(
             provider_type = provider if isinstance(provider, str) else provider.provider_type
 
             if provider_type not in providers_for_api:
-                raise ValueError(f"Provider `{provider}` is not available for API `{api_str}`")
+                raise ValueError(
+                    f"Failed to resolve dependencies: provider `{provider_type}` is not available for API `{api_str}`"
+                )
 
             provider_spec = providers_for_api[provider_type]
             if hasattr(provider_spec, "is_external") and provider_spec.is_external:
@@ -73,7 +113,7 @@ def get_provider_dependencies(
             if hasattr(provider_spec, "pip_packages"):
                 deps.extend(provider_spec.pip_packages)
             if hasattr(provider_spec, "container_image") and provider_spec.container_image:
-                raise ValueError("A stack's dependencies cannot have a container image")
+                raise ValueError("Failed to resolve dependencies: a stack's dependencies cannot have a container image")
 
     normal_deps = []
     special_deps = []
