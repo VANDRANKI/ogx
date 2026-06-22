@@ -50,6 +50,26 @@ OGX has a pluggable provider architecture. Develop locally with Ollama, deploy t
 
 See the [provider documentation](https://ogx-ai.github.io/docs/providers) for the full list.
 
+## Supported Providers
+
+OGX ships with built-in support for the following inference backends:
+
+| Provider | Type | Notes |
+| :--- | :--- | :--- |
+| [Ollama](https://ollama.com) | Local | Default for the `starter` distribution; no API key required |
+| [vLLM](https://github.com/vllm-project/vllm) | Self-hosted | High-throughput serving for large models |
+| [OpenAI](https://platform.openai.com) | Remote | GPT-4o, o1, o3, and embeddings |
+| [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service) | Remote | Same models via Azure endpoints |
+| [AWS Bedrock](https://aws.amazon.com/bedrock/) | Remote | Llama, Titan, Claude, Mistral, and more via Bedrock |
+| [Google Gemini](https://ai.google.dev) | Remote | Gemini 2.5 Pro/Flash via the Gemini API |
+| [Mistral](https://mistral.ai) | Remote | Mistral Large, Codestral, and others |
+| [Together AI](https://www.together.ai) | Remote | Hosted open-source models |
+| [Fireworks AI](https://fireworks.ai) | Remote | Fast inference for open-source models |
+| [WatsonX](https://www.ibm.com/watsonx) | Remote | IBM Granite and third-party models |
+| [NVIDIA NIM](https://www.nvidia.com/en-us/ai/) | Remote | NVIDIA-optimized model serving |
+
+For the complete list and per-provider capability matrix, see the [provider docs](https://ogx-ai.github.io/docs/providers).
+
 ## Get started
 
 Install and run a OGX server:
@@ -68,6 +88,53 @@ uv run ogx stack run starter
 Then connect with any OpenAI, Anthropic, or Google GenAI client — [Python](https://github.com/openai/openai-python), [TypeScript](https://github.com/openai/openai-node), [curl](https://platform.openai.com/docs/api-reference), or any framework that speaks these APIs.
 
 See the [Quick Start guide](https://ogx-ai.github.io/docs/getting_started/quickstart) for detailed setup.
+
+## Configuration
+
+OGX is configured through YAML distribution files and environment variables.
+
+### Key environment variables
+
+| Variable | Description | Example |
+| :--- | :--- | :--- |
+| `OPENAI_API_KEY` | OpenAI API key | `sk-...` |
+| `ANTHROPIC_API_KEY` | Anthropic API key | `sk-ant-...` |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | AWS credentials for Bedrock | — |
+| `AZURE_OPENAI_API_KEY` | Azure OpenAI key | — |
+| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI endpoint URL | `https://<name>.openai.azure.com/` |
+| `GOOGLE_API_KEY` | Google Gemini API key | `AIza...` |
+| `WATSONX_API_KEY` / `WATSONX_PROJECT_ID` | IBM WatsonX credentials | — |
+| `NVIDIA_API_KEY` | NVIDIA NIM API key | `nvapi-...` |
+| `TOGETHER_API_KEY` | Together AI API key | — |
+| `FIREWORKS_API_KEY` | Fireworks AI API key | — |
+
+### Distribution config example
+
+The server is started from a YAML distribution config. A minimal config for the OpenAI provider looks like:
+
+```yaml
+version: '2'
+image_name: my-ogx-server
+distribution_spec:
+  description: My OGX distribution
+  providers:
+    inference:
+      - provider_id: openai
+        provider_type: remote::openai
+        config:
+          api_key: ${env.OPENAI_API_KEY}
+    vector_io:
+      - provider_id: faiss
+        provider_type: inline::faiss
+        config: {}
+server:
+  port: 8321
+models:
+  - model_id: openai/gpt-4o
+    provider_id: openai
+```
+
+See `src/ogx/distributions/` for full distribution examples.
 
 ## Resources
 
