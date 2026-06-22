@@ -1,7 +1,7 @@
 .env
 __pycache__
 dist
-*.egg-info
+*.egg-info/
 dev_requirements.txt
 build
 .DS_Store
@@ -25,6 +25,8 @@ venv/
 pytest-report.xml
 .pytest_cache/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
 .python-version
 .mypy_cache/
@@ -55,3 +57,33 @@ client-sdks/openapi/sdks/
 client-sdks/openapi/.openapi-generator/
 .agentready
 .gstack/
+
+# Python byte-compiled and cache files
+*.pyc
+*.pyo
+*.pyd
+
+# Local environment overrides (keep .env.example tracked)
+.env.local
+.env.test
+.env.*.local
+
+# Ruff linter cache
+.ruff_cache/
+
+# Hypothesis property-based testing database
+.hypothesis/
+
+# Profiling output
+*.prof
+*.lprof
+profile_output/
+
+# Temporary files
+*.bak
+tmp/
+.cache/
+
+# macOS extended attributes
+.AppleDouble
+.LSOverride
