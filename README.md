@@ -25,6 +25,21 @@
 
 OGX is a drop-in replacement for the OpenAI API that you can run anywhere — your laptop, your datacenter, or the cloud. Use any OpenAI-compatible client or agentic framework. Swap between Llama, GPT, Gemini, Mistral, or any model without changing your application code.
 
+## Quick Start
+
+```bash
+# Install via uv (recommended)
+uv pip install ogx[starter]
+
+# Or one-line install script
+curl -LsSf https://github.com/ogx-ai/ogx/raw/main/scripts/install.sh | bash
+
+# Start the server (uses the starter distribution with Ollama)
+uv run ogx stack run starter
+```
+
+The server listens on `http://localhost:8321` by default. Point any OpenAI-compatible client at it:
+
 ```python
 from openai import OpenAI
 
@@ -33,41 +48,107 @@ response = client.chat.completions.create(
     model="llama-3.3-70b",
     messages=[{"role": "user", "content": "Hello"}],
 )
+print(response.choices[0].message.content)
 ```
 
 ## What you get
 
-- **Chat Completions & Embeddings** — standard `/v1/chat/completions`, `/v1/completions`, and `/v1/embeddings` endpoints, compatible with any OpenAI client
-- **Responses API** — server-side agentic orchestration with tool calling, MCP server integration, and built-in file search (RAG) in a single API call ([learn more](https://ogx-ai.github.io/docs/api-openai))
-- **Vector Stores & Files** — `/v1/vector_stores` and `/v1/files` for managed document storage and search
-- **Batches** — `/v1/batches` for offline batch processing
+| Feature | Endpoint | Notes |
+| ------- | -------- | ----- |
+| Chat Completions | `/v1/chat/completions` | Full streaming support |
+| Text Completions | `/v1/completions` | Legacy completions |
+| Embeddings | `/v1/embeddings` | Dense vector embeddings |
+| Responses API | `/v1/responses` | Server-side agentic orchestration with tool calling |
+| Vector Stores | `/v1/vector_stores` | Managed document storage and retrieval |
+| Files | `/v1/files` | Upload and manage files for RAG |
+| Batches | `/v1/batches` | Offline / async batch processing |
+| Anthropic Messages | `/v1/messages` | Native Anthropic SDK support |
+| Google GenAI | `/v1alpha/interactions` | Native Google GenAI SDK support |
+
 - **[Open Responses](https://www.openresponses.org/) conformant** — the Responses API implementation passes the Open Responses conformance test suite
-- **Multi-SDK support** — use the [Anthropic SDK](https://docs.anthropic.com/en/api/messages) (`/v1/messages`) or [Google GenAI SDK](https://ai.google.dev/gemini-api/docs/interactions) (`/v1alpha/interactions`) natively alongside the OpenAI API
+- **Multi-SDK support** — use the [Anthropic SDK](https://docs.anthropic.com/en/api/messages) or [Google GenAI SDK](https://ai.google.dev/gemini-api/docs/interactions) natively alongside the OpenAI API
+
+## Usage Examples
+
+### OpenAI SDK (Chat Completions)
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8321/v1", api_key="fake")
+
+# Streaming response
+with client.chat.completions.stream(
+    model="llama-3.3-70b",
+    messages=[{"role": "user", "content": "Explain async/await in Python"}],
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)
+```
+
+### Anthropic SDK
+
+```python
+import anthropic
+
+client = anthropic.Anthropic(
+    base_url="http://localhost:8321",
+    api_key="fake",
+)
+message = client.messages.create(
+    model="llama-3.3-70b",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "What is the capital of France?"}],
+)
+print(message.content[0].text)
+```
+
+### Responses API (Agentic, with built-in tool calling)
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8321/v1", api_key="fake")
+
+response = client.responses.create(
+    model="llama-3.3-70b",
+    tools=[{"type": "web_search_preview"}],
+    input="What's the latest news about open-source LLMs?",
+)
+print(response.output_text)
+```
+
+### Embeddings
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:8321/v1", api_key="fake")
+
+result = client.embeddings.create(
+    model="all-minilm",
+    input=["OGX is an open-source AI server", "It supports any model"],
+)
+for item in result.data:
+    print(f"Embedding dim: {len(item.embedding)}")
+```
 
 ## Use any model, use any infrastructure
 
 OGX has a pluggable provider architecture. Develop locally with Ollama, deploy to production with vLLM, or connect to a managed service — the API stays the same.
 
+| Provider | Type | Use Case |
+| -------- | ---- | -------- |
+| Ollama | Local | Development and local testing |
+| vLLM | Self-hosted | High-throughput production inference |
+| OpenAI | Remote | GPT-4o, GPT-4o-mini, and other OpenAI models |
+| Azure OpenAI | Remote | Enterprise OpenAI deployments |
+| Amazon Bedrock | Remote | AWS-managed model hosting |
+| WatsonX | Remote | IBM-managed model hosting |
+| Fireworks | Remote | Fast inference API |
+| Together | Remote | Open-source model hosting |
+
 See the [provider documentation](https://ogx-ai.github.io/docs/providers) for the full list.
-
-## Get started
-
-Install and run a OGX server:
-
-```bash
-# One-line install
-curl -LsSf https://github.com/ogx-ai/ogx/raw/main/scripts/install.sh | bash
-
-# Or install via uv
-uv pip install ogx[starter]
-
-# Start the server (uses the starter distribution with Ollama)
-uv run ogx stack run starter
-```
-
-Then connect with any OpenAI, Anthropic, or Google GenAI client — [Python](https://github.com/openai/openai-python), [TypeScript](https://github.com/openai/openai-node), [curl](https://platform.openai.com/docs/api-reference), or any framework that speaks these APIs.
-
-See the [Quick Start guide](https://ogx-ai.github.io/docs/getting_started/quickstart) for detailed setup.
 
 ## Resources
 
@@ -78,10 +159,10 @@ See the [Quick Start guide](https://ogx-ai.github.io/docs/getting_started/quicks
 
 **Client SDKs:**
 
-|  Language |  SDK | Package |
+| Language | SDK | Package |
 | :----: | :----: | :----: |
-| Python |  [ogx-client-python](https://github.com/ogx-ai/ogx-client-python) | [![PyPI version](https://img.shields.io/pypi/v/ogx_client.svg)](https://pypi.org/project/ogx_client/) |
-| TypeScript   | [ogx-client-typescript](https://github.com/ogx-ai/ogx-client-typescript) | [![NPM version](https://img.shields.io/npm/v/ogx-client.svg)](https://npmjs.org/package/ogx-client) |
+| Python | [ogx-client-python](https://github.com/ogx-ai/ogx-client-python) | [![PyPI version](https://img.shields.io/pypi/v/ogx_client.svg)](https://pypi.org/project/ogx_client/) |
+| TypeScript | [ogx-client-typescript](https://github.com/ogx-ai/ogx-client-typescript) | [![NPM version](https://img.shields.io/npm/v/ogx-client.svg)](https://npmjs.org/package/ogx-client) |
 
 ## Community
 
