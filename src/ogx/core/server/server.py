@@ -209,7 +209,7 @@ class ProviderDataMiddleware:
                         sync_test_context_from_provider_data,
                     )
 
-                    test_context_token = sync_test_context_from_provider_data()  # type: ignore[no-untyped-call]
+                    test_context_token = sync_test_context_from_provider_data()
                     reset_fn = reset_test_context
                 try:
                     return await self.app(scope, receive, send)
