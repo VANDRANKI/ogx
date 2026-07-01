@@ -1,6 +1,6 @@
 ## This is WIP
 
-We use shadcdn/ui [Shadcn UI](https://ui.shadcn.com/) for the UI components.
+We use shadcn/ui [Shadcn UI](https://ui.shadcn.com/) for the UI components.
 
 ## Getting Started
 
