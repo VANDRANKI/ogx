@@ -50,7 +50,7 @@ def formulate_run_args(image_type: str, distro_name: str) -> list:
     return run_args
 
 
-def in_notebook():
+def in_notebook() -> bool:
     """Detect whether the current code is running inside a Jupyter notebook.
 
     Returns:
