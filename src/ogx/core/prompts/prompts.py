@@ -53,7 +53,9 @@ class PromptServiceImpl(Prompts):
         # Use prompts store reference from run config
         prompts_ref = self.stack_config.storage.stores.prompts
         if not prompts_ref:
-            raise ValueError("storage.stores.prompts must be configured in run config")
+            raise ValueError(
+                "Failed to initialize prompt service: storage.stores.prompts must be configured in run config"
+            )
         self.kvstore = await kvstore_impl(prompts_ref)
 
     def _get_default_key(self, prompt_id: str) -> str:
@@ -68,7 +70,7 @@ class PromptServiceImpl(Prompts):
         default_key = self._get_default_key(prompt_id)
         resolved_version = await self.kvstore.get(default_key)
         if resolved_version is None:
-            raise ValueError(f"Prompt {prompt_id}:default not found")
+            raise ValueError(f"Failed to resolve prompt: default version not found for prompt_id='{prompt_id}'")
         return self._get_version_key(prompt_id, resolved_version)
 
     def _get_version_key(self, prompt_id: str, version: str) -> str:
@@ -158,7 +160,7 @@ class PromptServiceImpl(Prompts):
     async def update_prompt(self, request: UpdatePromptRequest) -> Prompt:
         """Update an existing prompt (increments version)."""
         if request.version < 1:
-            raise ValueError("Version must be >= 1")
+            raise ValueError("Failed to update prompt: version must be >= 1")
         variables = request.variables if request.variables is not None else []
 
         prompt_versions = await self.list_prompt_versions(ListPromptVersionsRequest(prompt_id=request.prompt_id))
@@ -166,7 +168,8 @@ class PromptServiceImpl(Prompts):
 
         if request.version and latest_prompt.version != request.version:
             raise ValueError(
-                f"'{request.version}' is not the latest prompt version for prompt_id='{request.prompt_id}'. Use the latest version '{latest_prompt.version}' in request."
+                f"Failed to update prompt: '{request.version}' is not the latest prompt version for "
+                f"prompt_id='{request.prompt_id}'. Use the latest version '{latest_prompt.version}' in request."
             )
 
         current_version = latest_prompt.version if request.version is None else request.version
@@ -213,7 +216,7 @@ class PromptServiceImpl(Prompts):
                     prompts.append(prompt_obj)
 
         if not prompts:
-            raise ValueError(f"Prompt {request.prompt_id} not found")
+            raise ValueError(f"Failed to find prompt: prompt_id='{request.prompt_id}' not found")
 
         for prompt in prompts:
             prompt.is_default = str(prompt.version) == default_version
@@ -226,7 +229,9 @@ class PromptServiceImpl(Prompts):
         version_key = self._get_version_key(request.prompt_id, str(request.version))
         data = await self.kvstore.get(version_key)
         if data is None:
-            raise ValueError(f"Prompt {request.prompt_id} version {request.version} not found")
+            raise ValueError(
+                f"Failed to find prompt version: prompt_id='{request.prompt_id}' version={request.version} not found"
+            )
 
         default_key = self._get_default_key(request.prompt_id)
         await self.kvstore.set(default_key, str(request.version))
