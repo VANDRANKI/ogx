@@ -244,7 +244,7 @@ class SQLiteVecIndex(EmbeddingIndex):
 
             except sqlite3.Error as e:
                 connection.rollback()
-                logger.error("Error inserting into", vector_table=self.vector_table, error=str(e))
+                logger.error("Failed to insert into vector table", vector_table=self.vector_table, error=str(e))
                 raise
 
             finally:
