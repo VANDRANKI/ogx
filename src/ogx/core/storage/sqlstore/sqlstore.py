@@ -40,7 +40,7 @@ def get_pip_packages(store_config: dict | SqlStoreConfig) -> list[str]:
         elif store_type == StorageBackendType.SQL_POSTGRES.value:
             return PostgresSqlStoreConfig.pip_packages()
         else:
-            raise ValueError(f"Unknown SQL store type: {store_type}")
+            raise ValueError(f"Failed to resolve pip packages: unknown SQL store type '{store_type}'")
     else:
         return store_config.pip_packages()
 
