@@ -63,7 +63,9 @@ class ConnectorServiceImpl(Connectors):
         # Use connectors store reference from run config
         connectors_ref = self.config.config.storage.stores.connectors
         if not connectors_ref:
-            raise ValueError("storage.stores.connectors must be configured in config")
+            raise ValueError(
+                "Failed to initialize connector service: storage.stores.connectors must be configured in config"
+            )
         self.kvstore = await kvstore_impl(connectors_ref)
 
     async def register_connector(
