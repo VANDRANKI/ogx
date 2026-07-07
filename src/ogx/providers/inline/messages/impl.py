@@ -176,7 +176,10 @@ class BuiltinMessagesImpl(Messages):
                 if obj:
                     provider_model = obj.provider_resource_id
             except Exception:
-                pass
+                logger.debug(
+                    "Failed to resolve provider_resource_id, using request model as-is",
+                    model=request.model,
+                )
 
         body = request.model_dump(exclude_none=True)
         body["model"] = provider_model
@@ -269,7 +272,10 @@ class BuiltinMessagesImpl(Messages):
                 if obj:
                     provider_model = obj.provider_resource_id
             except Exception:
-                pass
+                logger.debug(
+                    "Failed to resolve provider_resource_id, using request model as-is",
+                    model=request.model,
+                )
 
         body = request.model_dump(exclude_none=True)
         body["model"] = provider_model
