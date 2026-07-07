@@ -179,7 +179,19 @@ class FaissIndex(EmbeddingIndex):
 
         await self.kvstore.delete(f"{FAISS_INDEX_PREFIX}{self.bank_id}")
 
-    async def add_chunks(self, embedded_chunks: list[EmbeddedChunk]):
+    async def add_chunks(self, embedded_chunks: list[EmbeddedChunk]) -> None:
+        """Add embedded chunks to the FAISS index and persist the updated index.
+
+        Validates that each chunk's embedding dimension matches the index's configured
+        dimension, appends the chunks to the in-memory chunk/metadata indexes, adds the
+        embeddings to the underlying FAISS index, and saves the result to the kvstore.
+
+        Args:
+            embedded_chunks: Chunks with embeddings to add. A no-op if empty.
+
+        Raises:
+            ValueError: If an embedding's dimension does not match the index dimension.
+        """
         if not embedded_chunks:
             return
 
@@ -188,7 +200,9 @@ class FaissIndex(EmbeddingIndex):
         embeddings = np.array([ec.embedding for ec in embedded_chunks], dtype=np.float32)
         embedding_dim = embeddings.shape[1] if len(embeddings.shape) > 1 else embeddings.shape[0]
         if embedding_dim != self.index.d:
-            raise ValueError(f"Embedding dimension mismatch. Expected {self.index.d}, got {embedding_dim}")
+            raise ValueError(
+                f"Failed to add chunks: embedding dimension mismatch. Expected {self.index.d}, got {embedding_dim}"
+            )
 
         # Store chunks by index and update inverted metadata index
         indexlen = len(self.chunk_by_index)

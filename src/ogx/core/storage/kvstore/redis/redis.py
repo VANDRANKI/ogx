@@ -58,6 +58,19 @@ class RedisKVStoreImpl(KVStore):
         await self._client().delete(key)
 
     async def values_in_range(self, start_key: str, end_key: str) -> list[str]:
+        """Get the values of all keys in the given range.
+
+        Scans the keyspace with `SCAN` for keys sharing the `start_key` prefix, filters
+        to those lexicographically between `start_key` and `end_key`, then fetches all
+        matching values with a single `MGET` call.
+
+        Args:
+            start_key: Inclusive lower bound of the key range (before namespacing).
+            end_key: Inclusive upper bound of the key range (before namespacing).
+
+        Returns:
+            The string values for all keys in the range, in the order returned by `MGET`.
+        """
         start_key = self._namespaced_key(start_key)
         end_key = self._namespaced_key(end_key)
         client = self._client()
