@@ -31,7 +31,7 @@ class AnthropicInferenceAdapter(OpenAIMixin):
     #     "voyage-multimodal-3": {"embedding_dimension": 1024, "context_length": 32000},
     # }
 
-    def get_base_url(self):
+    def get_base_url(self) -> str:
         return "https://api.anthropic.com/v1"
 
     async def list_provider_model_ids(self) -> Iterable[str]:

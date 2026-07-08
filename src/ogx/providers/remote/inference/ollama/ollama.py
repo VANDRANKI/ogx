@@ -75,10 +75,10 @@ class OllamaInferenceAdapter(OpenAIMixin):
             self._clients[loop] = AsyncOllamaClient(host=host)
         return self._clients[loop]
 
-    def get_api_key(self):
+    def get_api_key(self) -> str:
         return "NO KEY REQUIRED"
 
-    def get_base_url(self):
+    def get_base_url(self) -> str:
         return str(self.config.base_url)
 
     def _prepare_reasoning_params(self, params: OpenAIChatCompletionRequestWithExtraBody) -> None:

@@ -29,7 +29,7 @@ class GeminiInferenceAdapter(OpenAIMixin):
         "models/gemini-embedding-001": {"embedding_dimension": 3072, "context_length": 2048},
     }
 
-    def get_base_url(self):
+    def get_base_url(self) -> str:
         return "https://generativelanguage.googleapis.com/v1beta/openai/"
 
     def get_api_key(self) -> str | None:

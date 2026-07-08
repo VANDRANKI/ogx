@@ -43,7 +43,7 @@ class TogetherInferenceAdapter(OpenAIMixin, NeedsRequestProviderData):
 
     provider_data_api_key_field: str = "together_api_key"
 
-    def get_base_url(self):
+    def get_base_url(self) -> str:
         return str(self.config.base_url)
 
     def _get_client(self) -> AsyncTogether:
