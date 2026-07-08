@@ -31,7 +31,7 @@ class ModelContextProtocolToolRuntimeImpl(ToolGroupsProtocolPrivate, ToolRuntime
     def __init__(self, config: MCPProviderConfig, _deps: dict[Api, Any]):
         self.config = config
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         pass
 
     async def register_toolgroup(self, toolgroup: ToolGroup) -> None:
@@ -48,7 +48,7 @@ class ModelContextProtocolToolRuntimeImpl(ToolGroupsProtocolPrivate, ToolRuntime
     ) -> ListToolDefsResponse:
         # this endpoint should be retrieved by getting the tool group right?
         if mcp_endpoint is None:
-            raise ValueError("mcp_endpoint is required")
+            raise ValueError("Failed to list runtime tools: mcp_endpoint is required")
 
         # Get other headers from provider data (but NOT authorization)
         provider_headers = await self.get_headers_from_request(mcp_endpoint.uri)
@@ -60,10 +60,10 @@ class ModelContextProtocolToolRuntimeImpl(ToolGroupsProtocolPrivate, ToolRuntime
     ) -> ToolInvocationResult:
         tool = await self.tool_store.get_tool(tool_name)
         if tool.metadata is None or tool.metadata.get("endpoint") is None:
-            raise ValueError(f"Tool {tool_name} does not have metadata")
+            raise ValueError(f"Failed to invoke tool '{tool_name}': tool does not have endpoint metadata")
         endpoint = tool.metadata.get("endpoint")
         if urlparse(endpoint).scheme not in ("http", "https"):
-            raise ValueError(f"Endpoint {endpoint} is not a valid HTTP(S) URL")
+            raise ValueError(f"Failed to invoke tool '{tool_name}': endpoint '{endpoint}' is not a valid HTTP(S) URL")
 
         # Get other headers from provider data (but NOT authorization)
         provider_headers = await self.get_headers_from_request(endpoint)
