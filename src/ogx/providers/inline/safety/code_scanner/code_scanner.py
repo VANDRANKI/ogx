@@ -63,7 +63,7 @@ class BuiltinCodeScannerSafetyImpl(Safety):
         from codeshield.cs import CodeShield
 
         text = "\n".join([interleaved_content_as_str(m.content) for m in request.messages])
-        log.info(f"Running CodeScannerShield on {text[50:]}")
+        log.info("Running CodeScannerShield", shield_id=request.shield_id, text_length=len(text))
         result = await CodeShield.scan_code(text)
 
         violation = None
@@ -111,12 +111,12 @@ class BuiltinCodeScannerSafetyImpl(Safety):
         from codeshield.cs import CodeShield
 
         for text_input in inputs:
-            log.info(f"Running CodeScannerShield moderation on input: {text_input[:100]}...")
+            log.info("Running CodeScannerShield moderation", input_preview=text_input[:100])
             try:
                 scan_result = await CodeShield.scan_code(text_input)
                 moderation_result = self.get_moderation_object_results(scan_result)
             except Exception as e:
-                log.error(f"CodeShield.scan_code failed: {e}")
+                log.error("Failed to run CodeShield.scan_code", error=str(e))
                 # create safe fallback response on scanner failure to avoid blocking legitimate requests
                 moderation_result = ModerationObjectResults(
                     flagged=False,
