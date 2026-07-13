@@ -139,7 +139,7 @@ class CommonRoutingTableImpl(RoutingTable):
         from .toolgroups import ToolGroupsRoutingTable
         from .vector_stores import VectorStoresRoutingTable
 
-        def apiname_object():
+        def apiname_object() -> tuple[str, str]:
             if isinstance(self, ModelsRoutingTable):
                 return ("Inference", "model")
             elif isinstance(self, ShieldsRoutingTable):
@@ -149,7 +149,7 @@ class CommonRoutingTableImpl(RoutingTable):
             elif isinstance(self, ToolGroupsRoutingTable):
                 return ("ToolGroups", "tool_group")
             else:
-                raise ValueError("Unknown routing table type")
+                raise ValueError(f"Failed to resolve routing table type: unknown type '{type(self).__name__}'")
 
         apiname, objtype = apiname_object()
 
