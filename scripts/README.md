@@ -70,5 +70,5 @@ uv run python scripts/normalize_recordings.py
 ### Remote test recording (via GitHub Actions)
 
 ```bash
-./scripts/github/schedule-record-workflow.sh --test-subdirs "inference,agents"
+gh workflow run record-integration-tests.yml -f pr_number=1234 -f subdirs="agents,inference"
 ```
