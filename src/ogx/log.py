@@ -81,7 +81,7 @@ def _reset_logging_state() -> None:
         logging.root.removeHandler(handler)
 
 
-def config_to_category_levels(category: str, level: str):
+def config_to_category_levels(category: str, level: str) -> dict[str, int]:
     """
     Helper function to be called either by environment parsing or yaml parsing to go from a list of categories and levels to a dictionary ready to be
     used by the logger dictConfig.
@@ -158,7 +158,7 @@ def parse_environment_config(env_config: str) -> dict[str, int]:
     return category_levels
 
 
-def strip_rich_markup(text):
+def strip_rich_markup(text: str) -> str:
     """Remove Rich markup tags like [dim], [bold magenta], etc.
 
     Preserves structlog level indicators like [info], [warning], [error]
