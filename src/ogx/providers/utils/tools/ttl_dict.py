@@ -14,7 +14,7 @@ class TTLDict(dict):
     A dictionary with a ttl for each item
     """
 
-    def __init__(self, ttl_seconds: float, *args, **kwargs):
+    def __init__(self, ttl_seconds: float, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.ttl_seconds = ttl_seconds
         self._expires: dict[Any, Any] = {}  # expires holds when an item will expire
@@ -24,22 +24,22 @@ class TTLDict(dict):
             for k, v in self.items():
                 self.__setitem__(k, v)
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: Any) -> None:
         with self._lock:
             del self._expires[key]
             super().__delitem__(key)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: Any, value: Any) -> None:
         with self._lock:
             self._expires[key] = time.monotonic() + self.ttl_seconds
             super().__setitem__(key, value)
 
-    def _is_expired(self, key):
+    def _is_expired(self, key: Any) -> bool:
         if key not in self._expires:
             return False
         return time.monotonic() > self._expires[key]
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Any) -> Any:
         with self._lock:
             if self._is_expired(key):
                 del self._expires[key]
@@ -48,20 +48,20 @@ class TTLDict(dict):
 
             return super().__getitem__(key)
 
-    def get(self, key, default=None):
+    def get(self, key: Any, default: Any = None) -> Any:
         try:
             return self[key]
         except KeyError:
             return default
 
-    def __contains__(self, key):
+    def __contains__(self, key: Any) -> bool:
         try:
             _ = self[key]
             return True
         except KeyError:
             return False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         with self._lock:
             for key in self.keys():
                 if self._is_expired(key):
