@@ -221,21 +221,27 @@ def make_overlapped_chunks(
 type EmbeddingSequence = Sequence[float | int | np.number] | NDArray[Any]
 
 
-def _validate_embedding(embedding: EmbeddingSequence, index: int, expected_dimension: int):
+def _validate_embedding(embedding: EmbeddingSequence, index: int, expected_dimension: int) -> None:
     """Helper method to validate embedding format and dimensions"""
     np = _get_numpy()
     if not isinstance(embedding, (list | np.ndarray)):
-        raise ValueError(f"Embedding at index {index} must be a list or numpy array, got {type(embedding)}")
+        raise ValueError(
+            f"Failed to validate embedding: embedding at index {index} must be a list or numpy array, "
+            f"got {type(embedding)}"
+        )
 
     if isinstance(embedding, np.ndarray):
         if not np.issubdtype(embedding.dtype, np.number):
-            raise ValueError(f"Embedding at index {index} contains non-numeric values")
+            raise ValueError(f"Failed to validate embedding: embedding at index {index} contains non-numeric values")
     else:
         if not all(isinstance(e, (float | int | np.number)) for e in embedding):
-            raise ValueError(f"Embedding at index {index} contains non-numeric values")
+            raise ValueError(f"Failed to validate embedding: embedding at index {index} contains non-numeric values")
 
     if len(embedding) != expected_dimension:
-        raise ValueError(f"Embedding at index {index} has dimension {len(embedding)}, expected {expected_dimension}")
+        raise ValueError(
+            f"Failed to validate embedding: embedding at index {index} has dimension {len(embedding)}, "
+            f"expected {expected_dimension}"
+        )
 
 
 class EmbeddingIndex(ABC):
