@@ -48,4 +48,4 @@ class ShieldRunnerMixin:
             if violation.violation_level == ViolationLevel.ERROR:
                 raise SafetyException(violation)
             elif violation.violation_level == ViolationLevel.WARN:
-                log.warning(f"[Warn]{identifier} raised a warning")
+                log.warning("Shield raised a warning", shield_identifier=identifier)

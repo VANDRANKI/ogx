@@ -151,7 +151,7 @@ class TransformersInferenceImpl(
             if cached is not None:
                 return cached
 
-            log.info(f"Loading reranker model {model}...")
+            log.info("Loading reranker model", model=model)
 
             def load_model():
                 from transformers import AutoModelForCausalLM, AutoTokenizer
