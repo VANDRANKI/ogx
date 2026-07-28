@@ -138,7 +138,7 @@ class FileSearchToolRuntimeImpl(ToolGroupsProtocolPrivate, ToolRuntime):
                 try:
                     file_data, mime_type = await raw_data_from_doc(doc)
                 except Exception as e:
-                    log.error(f"Failed to extract content from document {doc.document_id}: {e}")
+                    log.error("Failed to extract content from document", document_id=doc.document_id, error=str(e))
                     continue
 
                 file_extension = mimetypes.guess_extension(mime_type) or ".txt"
@@ -155,7 +155,7 @@ class FileSearchToolRuntimeImpl(ToolGroupsProtocolPrivate, ToolRuntime):
                         file=upload_file,
                     )
                 except Exception as e:
-                    log.error(f"Failed to upload file for document {doc.document_id}: {e}")
+                    log.error("Failed to upload file for document", document_id=doc.document_id, error=str(e))
                     continue
 
                 overlap_tokens = self.config.vector_stores_config.file_ingestion_params.default_chunk_overlap_tokens
@@ -177,12 +177,16 @@ class FileSearchToolRuntimeImpl(ToolGroupsProtocolPrivate, ToolRuntime):
                     )
                 except Exception as e:
                     log.error(
-                        f"Failed to attach file {created_file.id} to vector store {vector_store_id} for document {doc.document_id}: {e}"
+                        "Failed to attach file to vector store",
+                        file_id=created_file.id,
+                        vector_store_id=vector_store_id,
+                        document_id=doc.document_id,
+                        error=str(e),
                     )
                     continue
 
             except Exception as e:
-                log.error(f"Unexpected error processing document {doc.document_id}: {e}")
+                log.error("Unexpected error processing document", document_id=doc.document_id, error=str(e))
                 continue
 
     async def query(
