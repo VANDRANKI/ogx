@@ -83,7 +83,7 @@ uv run --group dev --group type_checking mypy
 
 We actively welcome your pull requests. However, please read the following. This is heavily inspired by [Ghostty](https://github.com/ghostty-org/ghostty/blob/main/CONTRIBUTING.md).
 
-If in doubt, please open a [issue](https://github.com/ogx-ai/ogx/issues).
+If in doubt, please open an [issue](https://github.com/ogx-ai/ogx/issues).
 
 ### Issues
 
@@ -218,7 +218,7 @@ This process helps ensure that new providers are well-designed, avoid duplicatio
 
 ### License
 
-By contributing to Llama, you agree that your contributions will be licensed
+By contributing to OGX, you agree that your contributions will be licensed
 under the LICENSE file in the root directory of this source tree.
 
 ## Common Tasks
