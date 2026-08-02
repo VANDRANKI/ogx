@@ -9,6 +9,7 @@ import os
 import signal
 import subprocess
 import sys
+from types import FrameType
 
 from termcolor import cprint
 
@@ -50,7 +51,7 @@ def formulate_run_args(image_type: str, distro_name: str) -> list:
     return run_args
 
 
-def in_notebook():
+def in_notebook() -> bool:
     """Detect whether the current code is running inside a Jupyter notebook.
 
     Returns:
@@ -83,10 +84,10 @@ def run_command(command: list[str]) -> int:
     original_sigint = signal.getsignal(signal.SIGINT)
     ctrl_c_pressed = False
 
-    def sigint_handler(signum, frame):
+    def sigint_handler(signum: int, frame: FrameType | None) -> None:
         nonlocal ctrl_c_pressed
         ctrl_c_pressed = True
-        log.info("\nCtrl-C detected. Aborting...")
+        log.info("Ctrl-C detected, aborting")
 
     try:
         # Set up the signal handler
@@ -101,18 +102,18 @@ def run_command(command: list[str]) -> int:
 
         # Print stdout and stderr if command failed
         if result.returncode != 0:
-            log.error(f"Command {' '.join(command)} failed with returncode {result.returncode}")
+            log.error("Command failed", command=" ".join(command), returncode=result.returncode)
             if result.stdout:
-                log.error(f"STDOUT: {result.stdout}")
+                log.error("Command produced stdout", stdout=result.stdout)
             if result.stderr:
-                log.error(f"STDERR: {result.stderr}")
+                log.error("Command produced stderr", stderr=result.stderr)
 
         return result.returncode
     except subprocess.SubprocessError as e:
-        log.error(f"Subprocess error: {e}")
+        log.error("Failed to run subprocess", error=str(e))
         return 1
     except Exception as e:
-        log.exception(f"Unexpected error: {e}")
+        log.exception("Failed to run command", error=str(e))
         return 1
     finally:
         # Restore the original signal handler
