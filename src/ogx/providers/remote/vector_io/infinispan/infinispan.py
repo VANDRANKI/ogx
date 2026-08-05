@@ -59,14 +59,14 @@ class InfinispanIndex(EmbeddingIndex):
         base_url: str,
         embedding_dimension: int,
         kvstore: KVStore | None = None,
-    ):
+    ) -> None:
         self.client = client
         self.cache_name = cache_name
         self.base_url = base_url.rstrip("/")
         self.embedding_dimension = embedding_dimension
         self.kvstore = kvstore
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """
         Check if the Infinispan cache exists, create if needed.
 
@@ -119,7 +119,7 @@ class InfinispanIndex(EmbeddingIndex):
 
         log.info("Cache created successfully", cache_name=self.cache_name)
 
-    async def _register_protobuf_schema(self):
+    async def _register_protobuf_schema(self) -> None:
         """Register the Protobuf schema with Infinispan for vector indexing."""
         # Load the schema template and replace dimension placeholder
         schema_template = load_schema("vector_chunk.proto")
@@ -145,7 +145,7 @@ class InfinispanIndex(EmbeddingIndex):
 
         log.info("Protobuf schema registered successfully", schema_name=schema_name)
 
-    async def add_chunks(self, chunks: list[EmbeddedChunk]):
+    async def add_chunks(self, chunks: list[EmbeddedChunk]) -> None:
         """
         Insert embedded chunks into Infinispan cache.
 
@@ -534,7 +534,7 @@ class InfinispanIndex(EmbeddingIndex):
 
         return QueryChunksResponse(chunks=chunks, scores=scores)
 
-    async def delete(self):
+    async def delete(self) -> None:
         """
         Delete the entire Infinispan cache.
 
