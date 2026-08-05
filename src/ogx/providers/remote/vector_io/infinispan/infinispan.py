@@ -83,16 +83,16 @@ class InfinispanIndex(EmbeddingIndex):
 
         if response.status_code == 204:
             # Cache already exists
-            log.info(f"Cache '{self.cache_name}' already exists")
+            log.info("Cache already exists", cache_name=self.cache_name)
             return
 
         if response.status_code != 404:
             # Unexpected error
-            log.error(f"Failed to check cache existence: {response.status_code} - {response.text}")
+            log.error("Failed to check cache existence", status_code=response.status_code, response_text=response.text)
             response.raise_for_status()
 
         # Cache doesn't exist, register schema first then create cache
-        log.info(f"Creating cache '{self.cache_name}'")
+        log.info("Creating cache", cache_name=self.cache_name)
 
         # Register Protobuf schema first (cache will reference this)
         await self._register_protobuf_schema()
@@ -112,10 +112,12 @@ class InfinispanIndex(EmbeddingIndex):
         )
 
         if create_response.status_code not in [200, 204]:
-            log.error(f"Failed to create cache: {create_response.status_code} - {create_response.text}")
+            log.error(
+                "Failed to create cache", status_code=create_response.status_code, response_text=create_response.text
+            )
             create_response.raise_for_status()
 
-        log.info(f"Cache '{self.cache_name}' created successfully")
+        log.info("Cache created successfully", cache_name=self.cache_name)
 
     async def _register_protobuf_schema(self):
         """Register the Protobuf schema with Infinispan for vector indexing."""
@@ -134,10 +136,14 @@ class InfinispanIndex(EmbeddingIndex):
         )
 
         if schema_response.status_code not in [200, 204]:
-            log.error(f"Failed to register Protobuf schema: {schema_response.status_code} - {schema_response.text}")
+            log.error(
+                "Failed to register Protobuf schema",
+                status_code=schema_response.status_code,
+                response_text=schema_response.text,
+            )
             schema_response.raise_for_status()
 
-        log.info(f"Protobuf schema '{schema_name}' registered successfully")
+        log.info("Protobuf schema registered successfully", schema_name=schema_name)
 
     async def add_chunks(self, chunks: list[EmbeddedChunk]):
         """
@@ -153,7 +159,7 @@ class InfinispanIndex(EmbeddingIndex):
         if not chunks:
             return
 
-        log.info(f"Inserting {len(chunks)} chunks into cache '{self.cache_name}'")
+        log.info("Inserting chunks into cache", chunk_count=len(chunks), cache_name=self.cache_name)
 
         for chunk in chunks:
             # Generate key from chunk_id
@@ -174,7 +180,7 @@ class InfinispanIndex(EmbeddingIndex):
             }
 
             # Insert into Infinispan cache
-            log.debug(f"PUT request to insert chunk {key}: {vector_item}")
+            log.debug("PUT request to insert chunk", key=key, vector_item=vector_item)
             response = await self.client.put(
                 f"{self.base_url}/rest/v3/caches/{self.cache_name}/entries/{key}",
                 json=vector_item,
@@ -182,10 +188,12 @@ class InfinispanIndex(EmbeddingIndex):
             )
 
             if response.status_code not in [200, 204]:
-                log.error(f"Failed to insert chunk {key}: {response.status_code} - {response.text}")
+                log.error(
+                    "Failed to insert chunk", key=key, status_code=response.status_code, response_text=response.text
+                )
                 response.raise_for_status()
 
-        log.info(f"Successfully inserted {len(chunks)} chunks")
+        log.info("Successfully inserted chunks", chunk_count=len(chunks))
 
     async def delete_chunks(self, chunks_for_deletion: list[ChunkForDeletion]) -> None:
         """
@@ -200,7 +208,7 @@ class InfinispanIndex(EmbeddingIndex):
         if not chunks_for_deletion:
             return
 
-        log.info(f"Deleting {len(chunks_for_deletion)} chunks from cache '{self.cache_name}'")
+        log.info("Deleting chunks from cache", chunk_count=len(chunks_for_deletion), cache_name=self.cache_name)
 
         for chunk in chunks_for_deletion:
             # Use chunk_id as key (same as in add_chunks)
@@ -210,10 +218,12 @@ class InfinispanIndex(EmbeddingIndex):
 
             if response.status_code not in [200, 204, 404]:
                 # 404 is acceptable - chunk may not exist
-                log.error(f"Failed to delete chunk {key}: {response.status_code} - {response.text}")
+                log.error(
+                    "Failed to delete chunk", key=key, status_code=response.status_code, response_text=response.text
+                )
                 response.raise_for_status()
 
-        log.info(f"Successfully deleted {len(chunks_for_deletion)} chunks")
+        log.info("Successfully deleted chunks", chunk_count=len(chunks_for_deletion))
 
     async def query_vector(
         self, embedding: NDArray, k: int, score_threshold: float, filters: Filter | None = None
@@ -234,7 +244,7 @@ class InfinispanIndex(EmbeddingIndex):
         if filters is not None:
             raise NotImplementedError("Infinispan provider does not yet support native filtering")
 
-        log.info(f"Performing vector similarity search in cache '{self.cache_name}' with k={k}")
+        log.info("Performing vector similarity search", cache_name=self.cache_name, k=k)
 
         # Convert embedding to list
         query_vector = embedding.tolist() if hasattr(embedding, "tolist") else list(embedding)
@@ -253,12 +263,12 @@ class InfinispanIndex(EmbeddingIndex):
         )
 
         if response.status_code != 200:
-            log.error(f"Vector search query failed: {response.status_code} - {response.text}")
+            log.error("Vector search query failed", status_code=response.status_code, response_text=response.text)
             response.raise_for_status()
 
         # Parse search results
         search_results = response.json()
-        log.info(f"Vector search returned {search_results.get('hit_count', 0)} total results")
+        log.info("Vector search returned results", hit_count=search_results.get("hit_count", 0))
 
         chunks = []
         scores = []
@@ -281,21 +291,21 @@ class InfinispanIndex(EmbeddingIndex):
             embedding_model = hit_data.get("embeddingModel", "unknown")
 
             if not chunk_id or not float_vector:
-                log.warning(f"Skipping incomplete hit: {hit_data}")
+                log.warning("Skipping incomplete hit", hit_data=hit_data)
                 continue
 
             # Deserialize metadata
             try:
                 metadata = json.loads(metadata_str) if metadata_str else {}
             except json.JSONDecodeError:
-                log.warning(f"Failed to parse metadata for chunk {chunk_id}, using empty dict")
+                log.warning("Failed to parse metadata, using empty dict", chunk_id=chunk_id)
                 metadata = {}
 
             # Deserialize chunk_metadata
             try:
                 chunk_metadata = json.loads(chunk_metadata_str) if chunk_metadata_str else {}
             except json.JSONDecodeError:
-                log.warning(f"Failed to parse chunk_metadata for chunk {chunk_id}, using empty dict")
+                log.warning("Failed to parse chunk_metadata, using empty dict", chunk_id=chunk_id)
                 chunk_metadata = {}
 
             # Create EmbeddedChunk object
@@ -315,7 +325,7 @@ class InfinispanIndex(EmbeddingIndex):
             try:
                 chunk = load_embedded_chunk_with_backward_compat(chunk_dict)
             except Exception as e:
-                log.error(f"Failed to load chunk {chunk_id}: {e}")
+                log.error("Failed to load chunk", chunk_id=chunk_id, error=str(e))
                 continue
 
             # Get score from hit (Infinispan returns computed similarity score)
@@ -326,7 +336,7 @@ class InfinispanIndex(EmbeddingIndex):
                 chunks.append(chunk)
                 scores.append(score)
 
-        log.info(f"Returning {len(chunks)} chunks after filtering by score_threshold={score_threshold}")
+        log.info("Returning chunks after filtering", chunk_count=len(chunks), score_threshold=score_threshold)
         return QueryChunksResponse(chunks=chunks, scores=scores)
 
     async def query_keyword(
@@ -352,7 +362,7 @@ class InfinispanIndex(EmbeddingIndex):
         if filters is not None:
             raise NotImplementedError("Infinispan provider does not yet support native filtering")
 
-        log.info(f"Performing keyword search in cache '{self.cache_name}' with query: {query_string}")
+        log.info("Performing keyword search", cache_name=self.cache_name, query=query_string)
 
         # Build Ickle query to search the text field
         # The text field has @Keyword annotation, so it's indexed for full-text search
@@ -369,12 +379,12 @@ class InfinispanIndex(EmbeddingIndex):
         )
 
         if response.status_code != 200:
-            log.error(f"Search query failed: {response.status_code} - {response.text}")
+            log.error("Search query failed", status_code=response.status_code, response_text=response.text)
             response.raise_for_status()
 
         # Parse search results
         search_results = response.json()
-        log.info(f"Search returned {search_results.get('hit_count', 0)} total results")
+        log.info("Search returned results", hit_count=search_results.get("hit_count", 0))
 
         chunks = []
         scores = []
@@ -397,21 +407,21 @@ class InfinispanIndex(EmbeddingIndex):
             embedding_model = hit_data.get("embeddingModel", "unknown")
 
             if not chunk_id or not float_vector:
-                log.warning(f"Skipping incomplete hit: {hit_data}")
+                log.warning("Skipping incomplete hit", hit_data=hit_data)
                 continue
 
             # Deserialize metadata
             try:
                 metadata = json.loads(metadata_str) if metadata_str else {}
             except json.JSONDecodeError:
-                log.warning(f"Failed to parse metadata for chunk {chunk_id}, using empty dict")
+                log.warning("Failed to parse metadata, using empty dict", chunk_id=chunk_id)
                 metadata = {}
 
             # Deserialize chunk_metadata
             try:
                 chunk_metadata = json.loads(chunk_metadata_str) if chunk_metadata_str else {}
             except json.JSONDecodeError:
-                log.warning(f"Failed to parse chunk_metadata for chunk {chunk_id}, using empty dict")
+                log.warning("Failed to parse chunk_metadata, using empty dict", chunk_id=chunk_id)
                 chunk_metadata = {}
 
             # Create EmbeddedChunk object
@@ -429,10 +439,14 @@ class InfinispanIndex(EmbeddingIndex):
             try:
                 chunk = load_embedded_chunk_with_backward_compat(chunk_dict)
                 log.info(
-                    f"Hit content - ID: {chunk_id}, Text: {text[:100]}{'...' if len(text) > 100 else ''}, Vector dim: {len(float_vector)}"
+                    "Hit content",
+                    chunk_id=chunk_id,
+                    text_preview=text[:100],
+                    text_truncated=len(text) > 100,
+                    vector_dim=len(float_vector),
                 )
             except Exception as e:
-                log.error(f"Failed to load chunk {chunk_id}: {e}")
+                log.error("Failed to load chunk", chunk_id=chunk_id, error=str(e))
                 continue
 
             # Get score from hit (Infinispan returns score for keyword search)
@@ -444,7 +458,7 @@ class InfinispanIndex(EmbeddingIndex):
                 chunks.append(chunk)
                 scores.append(score)
 
-        log.info(f"Returning {len(chunks)} chunks after filtering by score_threshold={score_threshold}")
+        log.info("Returning chunks after filtering", chunk_count=len(chunks), score_threshold=score_threshold)
         return QueryChunksResponse(chunks=chunks, scores=scores)
 
     async def query_hybrid(
@@ -527,15 +541,20 @@ class InfinispanIndex(EmbeddingIndex):
         Uses Infinispan REST API v3:
         - DELETE /rest/v3/caches/{cacheName}
         """
-        log.info(f"Deleting cache '{self.cache_name}'")
+        log.info("Deleting cache", cache_name=self.cache_name)
 
         response = await self.client.delete(f"{self.base_url}/rest/v3/caches/{self.cache_name}")
 
         if response.status_code not in [200, 204]:
-            log.error(f"Failed to delete cache '{self.cache_name}': {response.status_code} - {response.text}")
+            log.error(
+                "Failed to delete cache",
+                cache_name=self.cache_name,
+                status_code=response.status_code,
+                response_text=response.text,
+            )
             response.raise_for_status()
 
-        log.info(f"Cache '{self.cache_name}' deleted successfully")
+        log.info("Cache deleted successfully", cache_name=self.cache_name)
 
 
 class InfinispanVectorIOAdapter(OpenAIVectorStoreMixin, VectorIO, VectorStoresProtocolPrivate):
@@ -554,7 +573,7 @@ class InfinispanVectorIOAdapter(OpenAIVectorStoreMixin, VectorIO, VectorStoresPr
         super().__init__(
             inference_api=inference_api, files_api=files_api, kvstore=None, file_processor_api=file_processor_api
         )
-        log.info(f"Initializing InfinispanVectorIOAdapter with config: {config}")
+        log.info("Initializing InfinispanVectorIOAdapter", config=config)
         self.config = config
         self.client: httpx.AsyncClient | None = None
         self.cache: dict[str, VectorStoreWithIndex] = {}
@@ -581,7 +600,7 @@ class InfinispanVectorIOAdapter(OpenAIVectorStoreMixin, VectorIO, VectorStoresPr
                 elif self.config.auth_mechanism == "digest":
                     auth = httpx.DigestAuth(username=self.config.username, password=password)
                 else:
-                    log.warning(f"Unknown auth mechanism: {self.config.auth_mechanism}, using BasicAuth")
+                    log.warning("Unknown auth mechanism, using BasicAuth", auth_mechanism=self.config.auth_mechanism)
                     auth = httpx.BasicAuth(username=self.config.username, password=password)
 
         # Create async HTTP client
@@ -599,7 +618,7 @@ class InfinispanVectorIOAdapter(OpenAIVectorStoreMixin, VectorIO, VectorStoresPr
                 "DO NOT use in production environments."
             )
 
-        log.info(f"Connected to Infinispan server at: {str(self.config.url)}")
+        log.info("Connected to Infinispan server", url=str(self.config.url))
 
         # Load existing vector stores from KVStore
         await self._load_vector_stores_from_kvstore()
@@ -624,14 +643,14 @@ class InfinispanVectorIOAdapter(OpenAIVectorStoreMixin, VectorIO, VectorStoresPr
             end_key = VECTOR_DBS_PREFIX + "\xff"
 
             keys = await self.kvstore.keys_in_range(start_key, end_key)
-            log.info(f"Found {len(keys)} vector stores in KVStore")
+            log.info("Found vector stores in KVStore", store_count=len(keys))
 
             for key in keys:
                 try:
                     # Get the vector store data
                     vector_store_data = await self.kvstore.get(key)
                     if not vector_store_data:
-                        log.warning(f"Empty data for key {key}, skipping")
+                        log.warning("Empty data for key, skipping", key=key)
                         continue
 
                     # Deserialize the vector store
@@ -654,14 +673,14 @@ class InfinispanVectorIOAdapter(OpenAIVectorStoreMixin, VectorIO, VectorStoresPr
                     # Create VectorStoreWithIndex and add to cache
                     vector_store_with_index = VectorStoreWithIndex(vector_store, index, self.inference_api)
                     self.cache[vector_store.identifier] = vector_store_with_index
-                    log.info(f"Loaded vector store: {vector_store.identifier}")
+                    log.info("Loaded vector store", identifier=vector_store.identifier)
 
                 except Exception as e:
-                    log.error(f"Failed to load vector store from key {key}: {e}")
+                    log.error("Failed to load vector store from key", key=key, error=str(e))
                     continue
 
         except Exception as e:
-            log.warning(f"Failed to load vector stores from KVStore: {e}")
+            log.warning("Failed to load vector stores from KVStore", error=str(e))
 
     async def shutdown(self) -> None:
         """Clean up resources including HTTP client and mixin resources."""
@@ -703,7 +722,7 @@ class InfinispanVectorIOAdapter(OpenAIVectorStoreMixin, VectorIO, VectorStoresPr
         # Create VectorStoreWithIndex and add to cache
         vector_store_with_index = VectorStoreWithIndex(vector_store, index, self.inference_api)
         self.cache[vector_store.identifier] = vector_store_with_index
-        log.info(f"Registered vector store: {vector_store.identifier}")
+        log.info("Registered vector store", identifier=vector_store.identifier)
 
         # Persist to KVStore
         if self.kvstore:
@@ -718,7 +737,7 @@ class InfinispanVectorIOAdapter(OpenAIVectorStoreMixin, VectorIO, VectorStoresPr
             vector_store_id: Identifier of the vector store to delete
         """
         if vector_store_id not in self.cache:
-            log.debug(f"Vector DB {vector_store_id} not found in cache, skipping deletion")
+            log.debug("Vector DB not found in cache, skipping deletion", vector_store_id=vector_store_id)
             return
 
         # Delete from Infinispan
