@@ -205,7 +205,7 @@ def extract_openai_error(exc: Exception) -> tuple[str, str]:
     return final_code, message
 
 
-def convert_tooldef_to_chat_tool(tool_def):
+def convert_tooldef_to_chat_tool(tool_def: ToolDef) -> ChatCompletionToolParam:
     """Convert a ToolDef to OpenAI ChatCompletionToolParam format.
 
     Args:
@@ -218,7 +218,7 @@ def convert_tooldef_to_chat_tool(tool_def):
         tool_name=tool_def.name,
         description=tool_def.description,
         input_schema=tool_def.input_schema,
-    )
+    )  # type: ignore[return-value]  # Returns dict but ChatCompletionToolParam expects TypedDict
 
 
 class StreamingResponseOrchestrator:
