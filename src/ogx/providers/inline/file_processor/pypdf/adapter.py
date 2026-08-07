@@ -8,6 +8,7 @@
 from fastapi import UploadFile
 
 from ogx_api.file_processors import ProcessFileRequest, ProcessFileResponse
+from ogx_api.files import Files
 
 from .config import PyPDFFileProcessorConfig
 from .pypdf import PyPDFFileProcessor
@@ -16,7 +17,7 @@ from .pypdf import PyPDFFileProcessor
 class PyPDFFileProcessorAdapter:
     """Adapter for PyPDF file processor."""
 
-    def __init__(self, config: PyPDFFileProcessorConfig, files_api) -> None:
+    def __init__(self, config: PyPDFFileProcessorConfig, files_api: Files) -> None:
         self.config = config
         self.files_api = files_api
         self.processor = PyPDFFileProcessor(config, files_api)

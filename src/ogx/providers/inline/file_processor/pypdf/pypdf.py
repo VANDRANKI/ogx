@@ -17,7 +17,7 @@ from pypdf import PdfReader
 from ogx.log import get_logger
 from ogx.providers.utils.memory.vector_store import make_overlapped_chunks
 from ogx_api.file_processors import ProcessFileResponse
-from ogx_api.files import RetrieveFileContentRequest, RetrieveFileRequest
+from ogx_api.files import Files, RetrieveFileContentRequest, RetrieveFileRequest
 from ogx_api.vector_io import (
     Chunk,
     VectorStoreChunkingStrategy,
@@ -35,7 +35,7 @@ SINGLE_CHUNK_WINDOW_TOKENS = 1_000_000
 class PyPDFFileProcessor:
     """PyPDF-based file processor for PDF documents."""
 
-    def __init__(self, config: PyPDFFileProcessorConfig, files_api) -> None:
+    def __init__(self, config: PyPDFFileProcessorConfig, files_api: Files) -> None:
         self.config = config
         self.files_api = files_api
 

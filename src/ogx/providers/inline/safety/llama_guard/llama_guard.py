@@ -7,6 +7,7 @@
 import re
 import uuid
 from string import Template
+from typing import Any
 
 from ogx.core.datatypes import Api
 from ogx.log import get_logger
@@ -143,7 +144,7 @@ logger = get_logger(name=__name__, category="safety")
 class LlamaGuardSafetyImpl(Safety, ShieldsProtocolPrivate):
     """Safety provider implementation using Llama Guard models for content moderation."""
 
-    def __init__(self, config: LlamaGuardConfig, deps) -> None:
+    def __init__(self, config: LlamaGuardConfig, deps: dict[Api, Any]) -> None:
         self.config = config
         self.inference_api = deps[Api.inference]
 

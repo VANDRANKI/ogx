@@ -16,7 +16,7 @@ from markitdown import MarkItDown
 from ogx.log import get_logger
 from ogx.providers.utils.memory.vector_store import make_overlapped_chunks
 from ogx_api.file_processors import ProcessFileRequest, ProcessFileResponse
-from ogx_api.files import RetrieveFileContentRequest, RetrieveFileRequest
+from ogx_api.files import Files, RetrieveFileContentRequest, RetrieveFileRequest
 from ogx_api.vector_io import (
     Chunk,
     VectorStoreChunkingStrategy,
@@ -36,7 +36,7 @@ class MarkItDownFileProcessor:
     Supports PDF, DOCX, PPTX, XLSX, HTML, CSV, JSON, XML, and code files.
     """
 
-    def __init__(self, config: MarkItDownFileProcessorConfig, files_api) -> None:
+    def __init__(self, config: MarkItDownFileProcessorConfig, files_api: Files) -> None:
         self.config = config
         self.files_api = files_api
         self.converter = MarkItDown()

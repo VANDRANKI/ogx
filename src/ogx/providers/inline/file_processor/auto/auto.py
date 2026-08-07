@@ -13,7 +13,7 @@ from ogx.providers.inline.file_processor.markitdown.markitdown_processor import 
 from ogx.providers.inline.file_processor.pypdf.config import PyPDFFileProcessorConfig
 from ogx.providers.inline.file_processor.pypdf.pypdf import PyPDFFileProcessor
 from ogx_api.file_processors import ProcessFileRequest, ProcessFileResponse
-from ogx_api.files import RetrieveFileRequest
+from ogx_api.files import Files, RetrieveFileRequest
 
 from .config import AutoFileProcessorConfig
 
@@ -62,7 +62,7 @@ class AutoFileProcessor:
     rejected with a 422 error listing the supported types.
     """
 
-    def __init__(self, config: AutoFileProcessorConfig, files_api) -> None:
+    def __init__(self, config: AutoFileProcessorConfig, files_api: Files) -> None:
         self.config = config
         self.files_api = files_api
 

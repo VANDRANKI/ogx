@@ -5,11 +5,12 @@
 # the root directory of this source tree.
 
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from codeshield.cs import CodeShieldScanResult
 
+from ogx.core.datatypes import Api
 from ogx.log import get_logger
 from ogx.providers.utils.inference.prompt_adapter import (
     interleaved_content_as_str,
@@ -40,7 +41,7 @@ ALLOWED_CODE_SCANNER_MODEL_IDS = [
 class BuiltinCodeScannerSafetyImpl(Safety):
     """Safety provider that scans generated code for security vulnerabilities using CodeShield."""
 
-    def __init__(self, config: CodeScannerConfig, deps) -> None:
+    def __init__(self, config: CodeScannerConfig, deps: dict[Api, Any]) -> None:
         self.config = config
 
     async def initialize(self) -> None:

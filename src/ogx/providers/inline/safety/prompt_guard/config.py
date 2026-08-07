@@ -24,7 +24,7 @@ class PromptGuardConfig(BaseModel):
 
     @classmethod
     @field_validator("guard_type")
-    def validate_guard_type(cls, v):
+    def validate_guard_type(cls, v: str) -> str:
         if v not in [t.value for t in PromptGuardType]:
             raise ValueError(f"Unknown prompt guard type: {v}")
         return v

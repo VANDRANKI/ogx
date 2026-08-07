@@ -18,7 +18,7 @@ from fastapi import UploadFile
 from ogx.log import get_logger
 from ogx.providers.utils.vector_io.vector_utils import generate_chunk_id
 from ogx_api.file_processors import ProcessFileRequest, ProcessFileResponse
-from ogx_api.files import RetrieveFileContentRequest, RetrieveFileRequest
+from ogx_api.files import Files, RetrieveFileContentRequest, RetrieveFileRequest
 from ogx_api.vector_io import (
     Chunk,
     ChunkMetadata,
@@ -36,7 +36,7 @@ class DoclingFileProcessor:
     Supports multiple file formats via docling's DocumentConverter (PDF, DOCX, PPTX, HTML, images, etc.).
     """
 
-    def __init__(self, config: DoclingFileProcessorConfig, files_api=None) -> None:
+    def __init__(self, config: DoclingFileProcessorConfig, files_api: Files | None = None) -> None:
         self.config = config
         self.files_api = files_api
 

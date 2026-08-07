@@ -6,6 +6,7 @@
 
 from typing import Any
 
+from ogx.core.datatypes import Api
 from ogx.core.utils.model_utils import model_local_dir
 from ogx.log import get_logger
 from ogx.providers.utils.inference.prompt_adapter import (
@@ -37,7 +38,7 @@ class PromptGuardSafetyImpl(ShieldToModerationMixin, Safety, ShieldsProtocolPriv
 
     shield_store: ShieldStore
 
-    def __init__(self, config: PromptGuardConfig, _deps) -> None:
+    def __init__(self, config: PromptGuardConfig, _deps: dict[Api, Any]) -> None:
         self.config = config
 
     async def initialize(self) -> None:
