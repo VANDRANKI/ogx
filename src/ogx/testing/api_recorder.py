@@ -204,12 +204,14 @@ def normalize_inference_request(method: str, url: str, headers: dict[str, Any], 
     request_hash = hashlib.sha256(normalized_json.encode()).hexdigest()
 
     if is_debug_mode():
-        logger.info("[RECORDING DEBUG] Hash computation:")
-        logger.info(f"  Test ID: {test_id}")
-        logger.info(f"  Method: {method.upper()}")
-        logger.info(f"  Endpoint: {parsed.path}")
-        logger.info(f"  Model: {body.get('model', 'N/A')}")
-        logger.info(f"  Computed hash: {request_hash}")
+        logger.info(
+            "Recording debug: hash computation",
+            test_id=test_id,
+            method=method.upper(),
+            endpoint=parsed.path,
+            model=body.get("model", "N/A"),
+            request_hash=request_hash,
+        )
 
     return request_hash
 
@@ -258,11 +260,13 @@ def normalize_http_request(url: str, method: str, payload: dict[str, Any]) -> st
     request_hash = hashlib.sha256(normalized_json.encode()).hexdigest()
 
     if is_debug_mode():
-        logger.info("[RECORDING DEBUG] HTTP request hash computation:")
-        logger.info(f"  Test ID: {test_id}")
-        logger.info(f"  URL: {url}")
-        logger.info(f"  Method: {method}")
-        logger.info(f"  Computed hash: {request_hash}")
+        logger.info(
+            "Recording debug: HTTP request hash computation",
+            test_id=test_id,
+            url=url,
+            method=method,
+            request_hash=request_hash,
+        )
 
     return request_hash
 
@@ -307,9 +311,11 @@ def patch_httpx_for_test_id():
             request.headers["X-OGX-Provider-Data"] = json.dumps(provider_data)
 
             if is_debug_mode():
-                logger.info("[RECORDING DEBUG] Injected test ID into request header:")
-                logger.info(f"  Test ID: {test_id}")
-                logger.info(f"  URL: {request.url}")
+                logger.info(
+                    "Recording debug: injected test ID into request header",
+                    test_id=test_id,
+                    url=request.url,
+                )
 
         return None
 
@@ -428,11 +434,19 @@ def _deserialize_response(data: dict[str, Any]) -> Any:
 
             return cls.model_validate(data["__data__"])
         except (ImportError, AttributeError, TypeError, ValueError) as e:
-            logger.warning(f"Failed to deserialize object of type {data['__type__']} with model_validate: {e}")
+            logger.warning(
+                "Failed to deserialize object with model_validate",
+                type=data["__type__"],
+                error=str(e),
+            )
             try:
                 return cls.model_construct(**data["__data__"])
             except Exception as e:
-                logger.warning(f"Failed to deserialize object of type {data['__type__']} with model_construct: {e}")
+                logger.warning(
+                    "Failed to deserialize object with model_construct",
+                    type=data["__type__"],
+                    error=str(e),
+                )
                 return data["__data__"]
 
     return data
@@ -463,30 +477,36 @@ class ResponseStorage:
                 repo_root = self.base_dir.parent.parent.parent
                 result = repo_root / test_dir / "recordings"
                 if is_debug_mode():
-                    logger.info("[RECORDING DEBUG] Path resolution (absolute base_dir):")
-                    logger.info(f"  Test ID: {test_id}")
-                    logger.info(f"  Base dir: {self.base_dir}")
-                    logger.info(f"  Repo root: {repo_root}")
-                    logger.info(f"  Test file: {test_file}")
-                    logger.info(f"  Test dir: {test_dir}")
-                    logger.info(f"  Recordings dir: {result}")
+                    logger.info(
+                        "Recording debug: path resolution (absolute base_dir)",
+                        test_id=test_id,
+                        base_dir=self.base_dir,
+                        repo_root=repo_root,
+                        test_file=test_file,
+                        test_dir=test_dir,
+                        recordings_dir=result,
+                    )
                 return result
             else:
                 result = test_dir / "recordings"
                 if is_debug_mode():
-                    logger.info("[RECORDING DEBUG] Path resolution (relative base_dir):")
-                    logger.info(f"  Test ID: {test_id}")
-                    logger.info(f"  Base dir: {self.base_dir}")
-                    logger.info(f"  Test dir: {test_dir}")
-                    logger.info(f"  Recordings dir: {result}")
+                    logger.info(
+                        "Recording debug: path resolution (relative base_dir)",
+                        test_id=test_id,
+                        base_dir=self.base_dir,
+                        test_dir=test_dir,
+                        recordings_dir=result,
+                    )
                 return result
         else:
             # Fallback for non-test contexts
             result = self.base_dir / "recordings"
             if is_debug_mode():
-                logger.info("[RECORDING DEBUG] Path resolution (no test context):")
-                logger.info(f"  Base dir: {self.base_dir}")
-                logger.info(f"  Recordings dir: {result}")
+                logger.info(
+                    "Recording debug: path resolution (no test context)",
+                    base_dir=self.base_dir,
+                    recordings_dir=result,
+                )
             return result
 
     def _ensure_directory(self):
@@ -523,11 +543,13 @@ class ResponseStorage:
         response_path = responses_dir / response_file
 
         if is_debug_mode():
-            logger.info("[RECORDING DEBUG] Storing recording:")
-            logger.info(f"  Request hash: {request_hash}")
-            logger.info(f"  File: {response_path}")
-            logger.info(f"  Test ID: {_get_test_context_with_fallback()}")
-            logger.info(f"  Endpoint: {endpoint}")
+            logger.info(
+                "Recording debug: storing recording",
+                request_hash=request_hash,
+                file=response_path,
+                test_id=_get_test_context_with_fallback(),
+                endpoint=endpoint,
+            )
 
         # Save response to JSON file with metadata
         with open(response_path, "w") as f:
@@ -559,14 +581,16 @@ class ResponseStorage:
         response_path = test_dir / response_file
 
         if is_debug_mode():
-            logger.info("[RECORDING DEBUG] Looking up recording:")
-            logger.info(f"  Request hash: {request_hash}")
-            logger.info(f"  Primary path: {response_path}")
-            logger.info(f"  Primary exists: {response_path.exists()}")
+            logger.info(
+                "Recording debug: looking up recording",
+                request_hash=request_hash,
+                primary_path=response_path,
+                primary_exists=response_path.exists(),
+            )
 
         if response_path.exists():
             if is_debug_mode():
-                logger.info("  Found in primary location")
+                logger.info("Recording debug: found in primary location")
             return _recording_from_file(response_path)
 
         # Fallback to base recordings directory (for session-level recordings)
@@ -574,16 +598,19 @@ class ResponseStorage:
         fallback_path = fallback_dir / response_file
 
         if is_debug_mode():
-            logger.info(f"  Fallback path: {fallback_path}")
-            logger.info(f"  Fallback exists: {fallback_path.exists()}")
+            logger.info(
+                "Recording debug: checking fallback location",
+                fallback_path=fallback_path,
+                fallback_exists=fallback_path.exists(),
+            )
 
         if fallback_path.exists():
             if is_debug_mode():
-                logger.info("  Found in fallback location")
+                logger.info("Recording debug: found in fallback location")
             return _recording_from_file(fallback_path)
 
         if is_debug_mode():
-            logger.info("  Recording not found in either location")
+            logger.info("Recording debug: recording not found in either location")
 
         return None
 
@@ -1108,11 +1135,13 @@ async def _patched_inference_method(original_method, self, client_type, endpoint
     storage = _current_storage
 
     if is_debug_mode():
-        logger.info("[RECORDING DEBUG] Entering inference method:")
-        logger.info(f"  Mode: {mode}")
-        logger.info(f"  Client type: {client_type}")
-        logger.info(f"  Endpoint: {endpoint}")
-        logger.info(f"  Test context: {get_test_context()}")
+        logger.info(
+            "Recording debug: entering inference method",
+            mode=mode,
+            client_type=client_type,
+            endpoint=endpoint,
+            test_context=get_test_context(),
+        )
 
     if mode == APIRecordingMode.LIVE or storage is None:
         if endpoint in ("/v1/models", "/v1/openai/v1/models"):
@@ -1181,15 +1210,17 @@ async def _patched_inference_method(original_method, self, client_type, endpoint
         elif mode == APIRecordingMode.REPLAY:
             # REPLAY mode requires recording to exist
             if is_debug_mode():
-                logger.error("[RECORDING DEBUG] Recording not found!")
-                logger.error(f"  Mode: {mode}")
-                logger.error(f"  Request hash: {request_hash}")
-                logger.error(f"  Method: {method}")
-                logger.error(f"  URL: {url}")
-                logger.error(f"  Endpoint: {endpoint}")
-                logger.error(f"  Model: {body.get('model', 'unknown')}")
-                logger.error(f"  Test context: {get_test_context()}")
-                logger.error(f"  Stack config type: {os.environ.get('OGX_TEST_STACK_CONFIG_TYPE', 'library_client')}")
+                logger.error(
+                    "Recording debug: recording not found",
+                    mode=mode,
+                    request_hash=request_hash,
+                    method=method,
+                    url=url,
+                    endpoint=endpoint,
+                    model=body.get("model", "unknown"),
+                    test_context=get_test_context(),
+                    stack_config_type=os.environ.get("OGX_TEST_STACK_CONFIG_TYPE", "library_client"),
+                )
             raise RuntimeError(
                 f"Recording not found for request hash: {request_hash}\n"
                 f"Model: {body.get('model', 'unknown')} | Request: {method} {url}\n"
@@ -1302,10 +1333,12 @@ async def _patched_genai_method(original_method, self, endpoint, *args, **kwargs
     storage = _current_storage
 
     if is_debug_mode():
-        logger.info("[RECORDING DEBUG] Entering genai method:")
-        logger.info(f"  Mode: {mode}")
-        logger.info(f"  Endpoint: {endpoint}")
-        logger.info(f"  Test context: {_get_test_context_with_fallback()}")
+        logger.info(
+            "Recording debug: entering genai method",
+            mode=mode,
+            endpoint=endpoint,
+            test_context=_get_test_context_with_fallback(),
+        )
 
     if mode == APIRecordingMode.LIVE or storage is None:
         return await original_method(self, *args, **kwargs)
