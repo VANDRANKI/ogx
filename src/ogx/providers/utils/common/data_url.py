@@ -28,7 +28,10 @@ def parse_data_url(data_url: str):
     )
     match = data_url_pattern.match(data_url)
     if not match:
-        raise ValueError("Invalid Data URL format")
+        raise ValueError(
+            "Failed to parse data URL: expected format "
+            "'data:<mimetype>[;charset=<encoding>][;base64],<data>'"
+        )
 
     parts = match.groupdict()
     parts["is_base64"] = bool(parts["base64"])

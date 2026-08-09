@@ -81,22 +81,22 @@ class TestParseDataUrlValid:
 
 class TestParseDataUrlInvalid:
     def test_http_url_raises(self):
-        with pytest.raises(ValueError, match="Invalid Data URL format"):
+        with pytest.raises(ValueError, match="Failed to parse data URL"):
             parse_data_url("http://example.com/image.png")
 
     def test_missing_comma_raises(self):
-        with pytest.raises(ValueError, match="Invalid Data URL format"):
+        with pytest.raises(ValueError, match="Failed to parse data URL"):
             parse_data_url("data:text/plain")
 
     def test_empty_string_raises(self):
-        with pytest.raises(ValueError, match="Invalid Data URL format"):
+        with pytest.raises(ValueError, match="Failed to parse data URL"):
             parse_data_url("")
 
     def test_missing_mime_type_raises(self):
         # mimetype pattern requires at least one character
-        with pytest.raises(ValueError, match="Invalid Data URL format"):
+        with pytest.raises(ValueError, match="Failed to parse data URL"):
             parse_data_url("data:,hello")
 
     def test_plain_string_raises(self):
-        with pytest.raises(ValueError, match="Invalid Data URL format"):
+        with pytest.raises(ValueError, match="Failed to parse data URL"):
             parse_data_url("not a data url at all")
