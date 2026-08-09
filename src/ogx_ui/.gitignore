@@ -42,3 +42,5 @@ next-env.d.ts
 
 # playwright
 .last-run.json
+/test-results/
+/playwright-report/
