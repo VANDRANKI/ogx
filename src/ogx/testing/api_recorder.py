@@ -204,12 +204,14 @@ def normalize_inference_request(method: str, url: str, headers: dict[str, Any], 
     request_hash = hashlib.sha256(normalized_json.encode()).hexdigest()
 
     if is_debug_mode():
-        logger.info("[RECORDING DEBUG] Hash computation:")
-        logger.info(f"  Test ID: {test_id}")
-        logger.info(f"  Method: {method.upper()}")
-        logger.info(f"  Endpoint: {parsed.path}")
-        logger.info(f"  Model: {body.get('model', 'N/A')}")
-        logger.info(f"  Computed hash: {request_hash}")
+        logger.info(
+            "[RECORDING DEBUG] Hash computation",
+            test_id=test_id,
+            method=method.upper(),
+            endpoint=parsed.path,
+            model=body.get("model", "N/A"),
+            request_hash=request_hash,
+        )
 
     return request_hash
 
@@ -258,11 +260,13 @@ def normalize_http_request(url: str, method: str, payload: dict[str, Any]) -> st
     request_hash = hashlib.sha256(normalized_json.encode()).hexdigest()
 
     if is_debug_mode():
-        logger.info("[RECORDING DEBUG] HTTP request hash computation:")
-        logger.info(f"  Test ID: {test_id}")
-        logger.info(f"  URL: {url}")
-        logger.info(f"  Method: {method}")
-        logger.info(f"  Computed hash: {request_hash}")
+        logger.info(
+            "[RECORDING DEBUG] HTTP request hash computation",
+            test_id=test_id,
+            url=url,
+            method=method,
+            request_hash=request_hash,
+        )
 
     return request_hash
 
@@ -307,9 +311,11 @@ def patch_httpx_for_test_id():
             request.headers["X-OGX-Provider-Data"] = json.dumps(provider_data)
 
             if is_debug_mode():
-                logger.info("[RECORDING DEBUG] Injected test ID into request header:")
-                logger.info(f"  Test ID: {test_id}")
-                logger.info(f"  URL: {request.url}")
+                logger.info(
+                    "[RECORDING DEBUG] Injected test ID into request header",
+                    test_id=test_id,
+                    url=request.url,
+                )
 
         return None
 
@@ -428,11 +434,19 @@ def _deserialize_response(data: dict[str, Any]) -> Any:
 
             return cls.model_validate(data["__data__"])
         except (ImportError, AttributeError, TypeError, ValueError) as e:
-            logger.warning(f"Failed to deserialize object of type {data['__type__']} with model_validate: {e}")
+            logger.warning(
+                "Failed to deserialize object with model_validate",
+                object_type=data["__type__"],
+                error=str(e),
+            )
             try:
                 return cls.model_construct(**data["__data__"])
             except Exception as e:
-                logger.warning(f"Failed to deserialize object of type {data['__type__']} with model_construct: {e}")
+                logger.warning(
+                    "Failed to deserialize object with model_construct",
+                    object_type=data["__type__"],
+                    error=str(e),
+                )
                 return data["__data__"]
 
     return data
