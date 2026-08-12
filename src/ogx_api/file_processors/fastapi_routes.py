@@ -90,7 +90,7 @@ def create_router(impl: FileProcessors, max_upload_size_bytes: int = DEFAULT_MAX
                 if not isinstance(chunking_data, dict):
                     raise HTTPException(
                         status_code=400,
-                        detail="chunking_strategy must be a JSON object, not a list, string, or other type",
+                        detail="Failed to parse chunking_strategy: expected a JSON object, not a list, string, or other type",
                     )
 
                 if chunking_data.get("type") == "auto":
@@ -99,12 +99,13 @@ def create_router(impl: FileProcessors, max_upload_size_bytes: int = DEFAULT_MAX
                     parsed_chunking_strategy = VectorStoreChunkingStrategyStatic.model_validate(chunking_data)
                 else:
                     raise HTTPException(
-                        status_code=400, detail=f"Invalid chunking strategy type: {chunking_data.get('type')}"
+                        status_code=400,
+                        detail=f"Failed to parse chunking_strategy: invalid type '{chunking_data.get('type')}'",
                     )
             except json.JSONDecodeError as e:
-                raise HTTPException(status_code=400, detail=f"Invalid JSON in chunking_strategy: {str(e)}") from e
+                raise HTTPException(status_code=400, detail=f"Failed to parse chunking_strategy as JSON: {e}") from e
             except ValidationError as e:
-                raise HTTPException(status_code=400, detail=f"Invalid chunking strategy: {str(e)}") from e
+                raise HTTPException(status_code=400, detail=f"Failed to validate chunking_strategy: {e}") from e
 
         # For direct uploads, enforce the upload size limit before passing to the provider
         safe_file = None
