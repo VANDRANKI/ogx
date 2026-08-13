@@ -28,6 +28,7 @@ pytest-report.xml
 htmlcov/
 .python-version
 .mypy_cache/
+.ruff_cache/
 *.log
 *.swp
 *.swo
