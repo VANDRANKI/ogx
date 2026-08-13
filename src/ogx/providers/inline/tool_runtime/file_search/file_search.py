@@ -110,10 +110,10 @@ class FileSearchToolRuntimeImpl(ToolGroupsProtocolPrivate, ToolRuntime):
         self.inference_api = inference_api
         self.files_api = files_api
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         pass
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         pass
 
     async def register_toolgroup(self, toolgroup: ToolGroup) -> None:
