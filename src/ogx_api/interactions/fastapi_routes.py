@@ -66,7 +66,7 @@ async def _google_sse_generator(event_gen: AsyncIterator) -> AsyncIterator[str]:
         yield _create_google_sse_event("error", error_resp)
 
 
-def _preserve_context_for_sse(event_gen):
+def _preserve_context_for_sse(event_gen: AsyncIterator[str]) -> AsyncIterator[str]:
     """Preserve request context for SSE streaming.
 
     StreamingResponse runs in a different task, losing request contextvars.
