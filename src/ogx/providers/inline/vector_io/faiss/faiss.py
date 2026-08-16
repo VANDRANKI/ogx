@@ -188,7 +188,9 @@ class FaissIndex(EmbeddingIndex):
         embeddings = np.array([ec.embedding for ec in embedded_chunks], dtype=np.float32)
         embedding_dim = embeddings.shape[1] if len(embeddings.shape) > 1 else embeddings.shape[0]
         if embedding_dim != self.index.d:
-            raise ValueError(f"Embedding dimension mismatch. Expected {self.index.d}, got {embedding_dim}")
+            raise ValueError(
+                f"Failed to add chunks: embedding dimension mismatch. Expected {self.index.d}, got {embedding_dim}"
+            )
 
         # Store chunks by index and update inverted metadata index
         indexlen = len(self.chunk_by_index)
