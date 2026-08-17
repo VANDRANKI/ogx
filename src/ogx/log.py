@@ -81,7 +81,7 @@ def _reset_logging_state() -> None:
         logging.root.removeHandler(handler)
 
 
-def config_to_category_levels(category: str, level: str):
+def config_to_category_levels(category: str, level: str) -> dict[str, int]:
     """
     Helper function to be called either by environment parsing or yaml parsing to go from a list of categories and levels to a dictionary ready to be
     used by the logger dictConfig.
@@ -158,7 +158,7 @@ def parse_environment_config(env_config: str) -> dict[str, int]:
     return category_levels
 
 
-def strip_rich_markup(text):
+def strip_rich_markup(text: str) -> str:
     """Remove Rich markup tags like [dim], [bold magenta], etc.
 
     Preserves structlog level indicators like [info], [warning], [error]
@@ -166,7 +166,7 @@ def strip_rich_markup(text):
     """
     log_levels = {"debug", "info", "warning", "error", "critical", "exception"}
 
-    def _replace(match):
+    def _replace(match: re.Match[str]) -> str:
         content = match.group(1).strip()
         if content in log_levels:
             return match.group(0)
@@ -178,7 +178,7 @@ def strip_rich_markup(text):
 class CustomRichHandler(RichHandler):
     """Rich logging handler with configurable width and graceful markup error handling."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         # Set a reasonable default width for console output, especially when redirected to files
         console_width = int(os.environ.get("OGX_LOG_WIDTH", "120"))
         # Don't force terminal codes to avoid ANSI escape codes in log files
@@ -186,7 +186,7 @@ class CustomRichHandler(RichHandler):
         kwargs["console"] = Console(width=console_width, stderr=True)
         super().__init__(*args, **kwargs)
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
         """Override emit to handle markup errors gracefully."""
         try:
             super().emit(record)
@@ -208,12 +208,12 @@ class CustomFileHandler(logging.FileHandler):
     which manages stream lifecycle (open, write, flush, close).
     """
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         output = super().format(record)
         return strip_rich_markup(output)
 
 
-def _extract_event_message(_, __, event_dict):
+def _extract_event_message(_: Any, __: Any, event_dict: dict[str, Any]) -> dict[str, Any]:
     """
     Extract the structlog event and any bound key-value pairs into a
     human-readable message suitable for the Rich console handler.
@@ -341,7 +341,7 @@ def setup_logging(category_levels: dict[str, int] | None = None, log_file: str |
     class CategoryFilter(logging.Filter):
         """Ensure category is always present in log records."""
 
-        def filter(self, record):
+        def filter(self, record: logging.LogRecord) -> bool:
             if not hasattr(record, "category"):
                 record.category = UNCATEGORIZED  # Default to 'uncategorized' if no category found
             return True
@@ -349,7 +349,7 @@ def setup_logging(category_levels: dict[str, int] | None = None, log_file: str |
     class UvicornCategoryFilter(logging.Filter):
         """Assign uvicorn logs to 'server' category."""
 
-        def filter(self, record):
+        def filter(self, record: logging.LogRecord) -> bool:
             if not hasattr(record, "category"):
                 record.category = "server"
             return True
