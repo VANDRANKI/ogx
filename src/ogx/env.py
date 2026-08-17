@@ -18,7 +18,7 @@ def get_env_or_fail(key: str) -> str:
     value = os.getenv(key)
     if not value:
         raise MissingCredentialError(
-            f"\nMissing {key} in environment. Please set it using one of these methods:"
+            f"\nFailed to find required environment variable '{key}'. Please set it using one of these methods:"
             f"\n1. Export in shell: export {key}=your-key"
             f"\n2. Create .env file in project root with: {key}=your-key"
             f"\n3. Pass directly to pytest: pytest --env {key}=your-key"
