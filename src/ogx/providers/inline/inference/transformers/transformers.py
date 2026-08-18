@@ -113,7 +113,9 @@ class TransformersInferenceImpl(
             return RerankResponse(data=[])
 
         if request.max_num_results is not None and request.max_num_results < 1:
-            raise ValueError(f"max_num_results must be >= 1, got {request.max_num_results}")
+            raise ValueError(
+                f"Failed to validate rerank request: max_num_results must be >= 1, got {request.max_num_results}"
+            )
 
         # Get the tokenizer and reranker model
         reranker_tokenizer, reranker_model = await self.load_reranker_model(request.model)
