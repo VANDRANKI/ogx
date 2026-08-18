@@ -46,12 +46,12 @@ class RouteScope(BaseModel):
 
 def _mutually_exclusive(obj: Any, a: str, b: str) -> None:
     if getattr(obj, a) and getattr(obj, b):
-        raise ValueError(f"{a} and {b} are mutually exclusive")
+        raise ValueError(f"Failed to validate rule: `{a}` and `{b}` are mutually exclusive")
 
 
 def _require_one_of(obj: Any, a: str, b: str) -> None:
     if not getattr(obj, a) and not getattr(obj, b):
-        raise ValueError(f"on of {a} or {b} is required")
+        raise ValueError(f"Failed to validate rule: one of `{a}` or `{b}` is required")
 
 
 class AccessRule(BaseModel):

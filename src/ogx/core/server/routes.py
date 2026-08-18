@@ -92,7 +92,7 @@ def find_matching_route(method: str, path: str, route_impls: RouteImpls) -> Rout
     """
     impls = route_impls.get(method.lower())
     if not impls:
-        raise ValueError(f"No endpoint found for {path}")
+        raise ValueError(f"Failed to find endpoint for {method} {path}")
 
     for regex, (func, route_path, webmethod) in impls.items():
         match = re.match(regex, path)
@@ -100,4 +100,4 @@ def find_matching_route(method: str, path: str, route_impls: RouteImpls) -> Rout
             path_params = match.groupdict()
             return func, path_params, route_path, webmethod
 
-    raise ValueError(f"No endpoint found for {path}")
+    raise ValueError(f"Failed to find endpoint for {method} {path}")
