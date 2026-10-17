@@ -185,6 +185,26 @@ class TestVectorStore:
             assert chunk.metadata["metadata_token_count"] == len_metadata_tokens
             assert chunk.chunk_metadata.chunk_tokenizer == expected_tokenizer_name
 
+    def test_make_overlapped_chunks_ids_depend_on_document_id(self):
+        text = "The quick brown fox jumps over the lazy dog. " * 40
+
+        chunks_a = make_overlapped_chunks("file-a", text, 50, 10, {})
+        chunks_b = make_overlapped_chunks("file-b", text, 50, 10, {})
+
+        assert len(chunks_a) == len(chunks_b) > 1
+        ids_a = [c.chunk_id for c in chunks_a]
+        ids_b = [c.chunk_id for c in chunks_b]
+        assert len(set(ids_a)) == len(ids_a)
+        assert not set(ids_a) & set(ids_b)
+
+    def test_make_overlapped_chunks_ids_are_stable_for_the_same_document(self):
+        text = "The quick brown fox jumps over the lazy dog. " * 40
+
+        first = make_overlapped_chunks("file-a", text, 50, 10, {})
+        second = make_overlapped_chunks("file-a", text, 50, 10, {})
+
+        assert [c.chunk_id for c in first] == [c.chunk_id for c in second]
+
     def test_raise_overlapped_chunks_metadata_serialization_error(self):
         document_id = "test_doc_ex"
         text = "Some text"
