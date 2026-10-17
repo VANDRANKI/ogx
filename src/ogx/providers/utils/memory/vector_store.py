@@ -216,6 +216,11 @@ def make_overlapped_chunks(
             )
         )
 
+        # Once a window reaches the end of the text, the next window would only repeat
+        # tokens that this chunk already holds.
+        if i + window_len >= len(tokens):
+            break
+
     return chunks
 
 

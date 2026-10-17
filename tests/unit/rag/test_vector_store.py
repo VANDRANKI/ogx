@@ -154,7 +154,7 @@ class TestVectorStore:
     @pytest.mark.parametrize(
         "window_len, overlap_len, expected_chunks",
         [
-            (5, 2, 4),  # Create 4 chunks with window of 5 and overlap of 2
+            (5, 2, 3),  # Create 3 chunks with window of 5 and overlap of 2
             (4, 1, 4),  # Create 4 chunks with window of 4 and overlap of 1
         ],
     )
@@ -184,6 +184,39 @@ class TestVectorStore:
             assert chunk.metadata["token_count"] > 0
             assert chunk.metadata["metadata_token_count"] == len_metadata_tokens
             assert chunk.chunk_metadata.chunk_tokenizer == expected_tokenizer_name
+
+    @pytest.mark.parametrize(
+        "num_tokens, window_len, overlap_len",
+        [
+            (10, 8, 4),
+            (12, 8, 4),
+            (16, 8, 4),
+            (20, 8, 4),
+            (2000, 800, 400),
+            (1000, 800, 400),
+            (7, 8, 4),
+            (8, 8, 4),
+            (9, 8, 0),
+        ],
+    )
+    def test_make_overlapped_chunks_has_no_redundant_tail(self, num_tokens, window_len, overlap_len):
+        encoding = get_encoding("cl100k_base")
+        text = " ".join(["hello"] * num_tokens)
+        assert len(encoding.encode(text)) == num_tokens
+
+        chunks = make_overlapped_chunks("doc", text, window_len, overlap_len, {})
+
+        windows = [tuple(int(part) for part in c.chunk_metadata.chunk_window.split("-")) for c in chunks]
+        assert windows[0][0] == 0
+        assert windows[-1][1] == num_tokens
+        for (prev_start, prev_end), (start, end) in zip(windows, windows[1:], strict=False):
+            assert start > prev_start
+            assert end > prev_end
+
+    def test_make_overlapped_chunks_single_window_for_short_text(self):
+        chunks = make_overlapped_chunks("doc", "a short sentence", 800, 400, {})
+        assert len(chunks) == 1
+        assert chunks[0].content == "a short sentence"
 
     def test_raise_overlapped_chunks_metadata_serialization_error(self):
         document_id = "test_doc_ex"
